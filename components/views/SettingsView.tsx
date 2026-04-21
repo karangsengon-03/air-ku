@@ -1,0 +1,864 @@
+"use client";
+import { useState, useEffect, useRef } from "react";
+import {
+  Settings, ChevronDown, ChevronUp, Plus, Trash2, Edit2, Check, X,
+  Download, Upload, Users, Info, AlertTriangle, Save, History,
+  ToggleLeft, ToggleRight, MapPin, DollarSign, UserCog,
+} from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+import { APP_NAME, APP_VERSION } from "@/lib/constants";
+import { formatRp, formatTanggal } from "@/lib/helpers";
+import {
+  updateSettings, saveHargaHistory, getHargaHistoryList,
+  getRoles, exportBackup, importBackup, BackupData,
+} from "@/lib/db";
+import { saveActivityLog } from "@/lib/db";
+import { HargaHistory, UserRole } from "@/types";
+
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+
+function Section({
+  icon, title, children, defaultOpen = false,
+}: {
+  icon: React.ReactNode; title: string; children: React.ReactNode; defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="card" style={{ marginBottom: 12, overflow: "hidden" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "16px", background: "none", border: "none", cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: "var(--color-primary)" }}>{icon}</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>{title}</span>
+        </div>
+        <span style={{ color: "var(--color-txt3)" }}>
+          {open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+        </span>
+      </button>
+      {open && (
+        <div style={{ padding: "0 16px 16px", borderTop: "1px solid var(--color-border)" }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function SettingsView() {
+  const { settings, userRole, addToast, showConfirm } = useAppStore();
+  const isAdmin = userRole?.role === "admin";
+
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: "40px 16px", textAlign: "center" }}>
+        <Settings size={40} style={{ color: "var(--color-txt3)", margin: "0 auto 12px" }} />
+        <p style={{ color: "var(--color-txt3)" }}>Hanya admin yang dapat mengakses pengaturan.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingBottom: 100 }}>
+      <TarifSection settings={settings} userRole={userRole} addToast={addToast} showConfirm={showConfirm} />
+      <DusunRTSection settings={settings} addToast={addToast} showConfirm={showConfirm} />
+      <ModeTunggakanSection settings={settings} addToast={addToast} />
+      <InfoOrganisasiSection settings={settings} addToast={addToast} />
+      <AccountsSection />
+      <BackupSection addToast={addToast} showConfirm={showConfirm} />
+      <InfoAppSection />
+    </div>
+  );
+}
+
+// ─── Tarif ────────────────────────────────────────────────────────────────────
+
+function TarifSection({ settings, userRole, addToast, showConfirm }: {
+  settings: ReturnType<typeof useAppStore>["settings"];
+  userRole: ReturnType<typeof useAppStore>["userRole"];
+  addToast: (t: "success" | "error" | "info", m: string) => void;
+  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+}) {
+  const [editing, setEditing] = useState(false);
+  const [abonemen, setAbonemen] = useState(String(settings.abonemen));
+  const [hargaBlok1, setHargaBlok1] = useState(String(settings.hargaBlok1));
+  const [batasBlok, setBatasBlok] = useState(String(settings.batasBlok));
+  const [hargaBlok2, setHargaBlok2] = useState(String(settings.hargaBlok2));
+  const [catatan, setCatatan] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [history, setHistory] = useState<HargaHistory[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      setAbonemen(String(settings.abonemen));
+      setHargaBlok1(String(settings.hargaBlok1));
+      setBatasBlok(String(settings.batasBlok));
+      setHargaBlok2(String(settings.hargaBlok2));
+    }
+  }, [settings, editing]);
+
+  const handleSave = () => {
+    const a = parseInt(abonemen) || 0;
+    const h1 = parseInt(hargaBlok1) || 0;
+    const batas = parseInt(batasBlok) || 0;
+    const h2 = parseInt(hargaBlok2) || 0;
+    if (a <= 0 || h1 <= 0 || batas <= 0 || h2 <= 0) {
+      addToast("error", "Semua nilai harus lebih dari 0");
+      return;
+    }
+    showConfirm(
+      "Simpan Tarif Baru",
+      "Perubahan tarif TIDAK mempengaruhi tagihan lama. Tagihan baru akan menggunakan tarif ini.",
+      async () => {
+        setSaving(true);
+        try {
+          await updateSettings({ abonemen: a, hargaBlok1: h1, batasBlok: batas, hargaBlok2: h2 });
+          await saveHargaHistory({
+            abonemen: a, hargaBlok1: h1, batasBlok: batas, hargaBlok2: h2,
+            catatan: catatan.trim() || "Perubahan tarif",
+            diubahOleh: userRole?.email || "",
+            tanggal: null,
+          });
+          await saveActivityLog(
+            "ubah_tarif",
+            `Tarif diubah: abonemen=${formatRp(a)}, blok1=${formatRp(h1)}/m³, batas=${batas}m³, blok2=${formatRp(h2)}/m³`,
+            userRole?.email || "", userRole?.role || ""
+          );
+          addToast("success", "Tarif berhasil disimpan");
+          setEditing(false);
+          setCatatan("");
+        } catch {
+          addToast("error", "Gagal menyimpan tarif");
+        } finally {
+          setSaving(false);
+        }
+      }
+    );
+  };
+
+  const loadHistory = async () => {
+    if (showHistory) { setShowHistory(false); return; }
+    setLoadingHistory(true);
+    try {
+      const list = await getHargaHistoryList();
+      setHistory(list);
+      setShowHistory(true);
+    } catch {
+      addToast("error", "Gagal memuat riwayat tarif");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  return (
+    <Section icon={<DollarSign size={18} />} title="Tarif Air" defaultOpen>
+      <div style={{ paddingTop: 12 }}>
+        {/* Current tariff display */}
+        <div style={{ background: "var(--color-bg)", borderRadius: 8, padding: 12, marginBottom: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {[
+              { label: "Abonemen", value: formatRp(settings.abonemen) + "/bln" },
+              { label: "Harga Blok 1", value: formatRp(settings.hargaBlok1) + "/m³" },
+              { label: "Batas Blok", value: settings.batasBlok + " m³" },
+              { label: "Harga Blok 2", value: formatRp(settings.hargaBlok2) + "/m³" },
+            ].map((item) => (
+              <div key={item.label}>
+                <div style={{ fontSize: 11, color: "var(--color-txt3)", marginBottom: 2 }}>{item.label}</div>
+                <div className="mono" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-txt)" }}>{item.value}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Edit form */}
+        {editing ? (
+          <div>
+            {[
+              { label: "Abonemen (Rp/bulan)", val: abonemen, set: setAbonemen },
+              { label: "Harga Blok 1 (Rp/m³)", val: hargaBlok1, set: setHargaBlok1 },
+              { label: "Batas Blok (m³)", val: batasBlok, set: setBatasBlok },
+              { label: "Harga Blok 2 (Rp/m³)", val: hargaBlok2, set: setHargaBlok2 },
+            ].map((f) => (
+              <div key={f.label} style={{ marginBottom: 10 }}>
+                <label className="section-label">{f.label}</label>
+                <input
+                  className="input-field mono"
+                  inputMode="numeric"
+                  value={f.val}
+                  onChange={(e) => f.set(e.target.value.replace(/\D/g, ""))}
+                />
+              </div>
+            ))}
+            <div style={{ marginBottom: 12 }}>
+              <label className="section-label">Catatan Perubahan (opsional)</label>
+              <input
+                className="input-field"
+                placeholder="cth: penyesuaian tarif 2026"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+              />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setEditing(false)} disabled={saving}>
+                Batal
+              </button>
+              <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>
+                {saving ? "Menyimpan..." : "Simpan Tarif"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn-secondary" style={{ width: "100%" }} onClick={() => setEditing(true)}>
+            <Edit2 size={15} style={{ marginRight: 6 }} />
+            Ubah Tarif
+          </button>
+        )}
+
+        {/* History toggle */}
+        <button
+          onClick={loadHistory}
+          style={{
+            marginTop: 10, width: "100%", padding: "10px", background: "none",
+            border: "none", cursor: "pointer", color: "var(--color-primary)",
+            fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          }}
+        >
+          <History size={14} />
+          {loadingHistory ? "Memuat..." : showHistory ? "Sembunyikan Riwayat" : "Lihat Riwayat Perubahan Tarif"}
+        </button>
+
+        {showHistory && (
+          <div style={{ marginTop: 8, borderTop: "1px solid var(--color-border)", paddingTop: 10 }}>
+            {history.length === 0 ? (
+              <p style={{ fontSize: 13, color: "var(--color-txt3)", textAlign: "center" }}>Belum ada riwayat perubahan.</p>
+            ) : history.map((h, i) => (
+              <div key={h.id || i} style={{
+                padding: "10px 12px", borderRadius: 8, marginBottom: 6,
+                background: "var(--color-bg)", border: "1px solid var(--color-border)",
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                  <span style={{ fontSize: 12, color: "var(--color-txt3)" }}>{formatTanggal(h.tanggal)}</span>
+                  <span style={{ fontSize: 12, color: "var(--color-txt3)" }}>{h.diubahOleh}</span>
+                </div>
+                <div className="mono" style={{ fontSize: 13, color: "var(--color-txt)" }}>
+                  Abonemen: {formatRp(h.abonemen)} · Blok1: {formatRp(h.hargaBlok1)}/m³
+                </div>
+                <div className="mono" style={{ fontSize: 13, color: "var(--color-txt2)" }}>
+                  Batas: {h.batasBlok}m³ · Blok2: {formatRp(h.hargaBlok2)}/m³
+                </div>
+                {h.catatan && (
+                  <div style={{ fontSize: 12, color: "var(--color-txt3)", marginTop: 4, fontStyle: "italic" }}>
+                    {h.catatan}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+// ─── Dusun & RT ───────────────────────────────────────────────────────────────
+
+function DusunRTSection({ settings, addToast, showConfirm }: {
+  settings: ReturnType<typeof useAppStore>["settings"];
+  addToast: (t: "success" | "error" | "info", m: string) => void;
+  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+}) {
+  const [newDusun, setNewDusun] = useState("");
+  const [editingDusun, setEditingDusun] = useState<string | null>(null);
+  const [editDusunVal, setEditDusunVal] = useState("");
+  const [expandedDusun, setExpandedDusun] = useState<string | null>(null);
+  const [newRt, setNewRt] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const dusunList = settings.dusunList || [];
+  const rtPerDusun = settings.rtPerDusun || {};
+
+  const save = async (data: Partial<typeof settings>) => {
+    setSaving(true);
+    try {
+      await updateSettings(data);
+      addToast("success", "Tersimpan");
+    } catch {
+      addToast("error", "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const tambahDusun = async () => {
+    const name = newDusun.trim();
+    if (!name) return;
+    if (dusunList.includes(name)) { addToast("error", "Nama dusun sudah ada"); return; }
+    const newList = [...dusunList, name].sort();
+    await save({ dusunList: newList, rtPerDusun: { ...rtPerDusun, [name]: [] } });
+    setNewDusun("");
+  };
+
+  const hapusDusun = (name: string) => {
+    showConfirm(
+      "Hapus Dusun",
+      `Hapus dusun "${name}" beserta semua RT-nya? Data pelanggan tidak terhapus.`,
+      async () => {
+        const newList = dusunList.filter((d) => d !== name);
+        const newRtPerDusun = { ...rtPerDusun };
+        delete newRtPerDusun[name];
+        await save({ dusunList: newList, rtPerDusun: newRtPerDusun });
+        if (expandedDusun === name) setExpandedDusun(null);
+      },
+      true
+    );
+  };
+
+  const simpanEditDusun = async (oldName: string) => {
+    const newName = editDusunVal.trim();
+    if (!newName || newName === oldName) { setEditingDusun(null); return; }
+    if (dusunList.includes(newName)) { addToast("error", "Nama dusun sudah ada"); return; }
+    const newList = dusunList.map((d) => (d === oldName ? newName : d)).sort();
+    const newRtPerDusun = { ...rtPerDusun };
+    newRtPerDusun[newName] = newRtPerDusun[oldName] || [];
+    delete newRtPerDusun[oldName];
+    await save({ dusunList: newList, rtPerDusun: newRtPerDusun });
+    setEditingDusun(null);
+    if (expandedDusun === oldName) setExpandedDusun(newName);
+  };
+
+  const tambahRT = async (dusun: string) => {
+    const rt = newRt.trim();
+    if (!rt) return;
+    const current = rtPerDusun[dusun] || [];
+    if (current.includes(rt)) { addToast("error", "RT sudah ada"); return; }
+    const newList = [...current, rt].sort();
+    await save({ rtPerDusun: { ...rtPerDusun, [dusun]: newList } });
+    setNewRt("");
+  };
+
+  const hapusRT = (dusun: string, rt: string) => {
+    showConfirm("Hapus RT", `Hapus ${rt} dari ${dusun}?`, async () => {
+      const newList = (rtPerDusun[dusun] || []).filter((r) => r !== rt);
+      await save({ rtPerDusun: { ...rtPerDusun, [dusun]: newList } });
+    }, true);
+  };
+
+  return (
+    <Section icon={<MapPin size={18} />} title="Dusun & RT">
+      <div style={{ paddingTop: 12 }}>
+        {/* Tambah dusun */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+          <input
+            className="input-field"
+            placeholder="Nama dusun baru..."
+            value={newDusun}
+            onChange={(e) => setNewDusun(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && tambahDusun()}
+            style={{ flex: 1 }}
+          />
+          <button className="btn-primary" onClick={tambahDusun} disabled={saving || !newDusun.trim()}
+            style={{ padding: "0 16px", minWidth: 52 }}>
+            <Plus size={18} />
+          </button>
+        </div>
+
+        {dusunList.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--color-txt3)", textAlign: "center", padding: "8px 0" }}>
+            Belum ada dusun. Tambahkan di atas.
+          </p>
+        ) : dusunList.map((dusun) => (
+          <div key={dusun} style={{ marginBottom: 8, border: "1px solid var(--color-border)", borderRadius: 10, overflow: "hidden" }}>
+            {/* Dusun row */}
+            <div style={{ display: "flex", alignItems: "center", padding: "10px 12px", background: "var(--color-bg)" }}>
+              {editingDusun === dusun ? (
+                <>
+                  <input
+                    className="input-field"
+                    value={editDusunVal}
+                    onChange={(e) => setEditDusunVal(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && simpanEditDusun(dusun)}
+                    style={{ flex: 1, marginRight: 8, height: 36 }}
+                    autoFocus
+                  />
+                  <button onClick={() => simpanEditDusun(dusun)} style={{ marginRight: 4, color: "var(--color-lunas)", background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+                    <Check size={16} />
+                  </button>
+                  <button onClick={() => setEditingDusun(null)} style={{ color: "var(--color-belum)", background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+                    <X size={16} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setExpandedDusun(expandedDusun === dusun ? null : dusun)}
+                    style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                      fontSize: 14, fontWeight: 600, color: "var(--color-txt)", display: "flex", alignItems: "center", gap: 8 }}
+                  >
+                    <MapPin size={14} style={{ color: "var(--color-primary)" }} />
+                    {dusun}
+                    <span style={{ fontSize: 12, color: "var(--color-txt3)", fontWeight: 400 }}>
+                      ({(rtPerDusun[dusun] || []).length} RT)
+                    </span>
+                    {expandedDusun === dusun ? <ChevronUp size={14} style={{ marginLeft: "auto" }} /> : <ChevronDown size={14} style={{ marginLeft: "auto" }} />}
+                  </button>
+                  <button onClick={() => { setEditingDusun(dusun); setEditDusunVal(dusun); }}
+                    style={{ color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+                    <Edit2 size={14} />
+                  </button>
+                  <button onClick={() => hapusDusun(dusun)}
+                    style={{ color: "var(--color-belum)", background: "none", border: "none", cursor: "pointer", padding: 6 }}>
+                    <Trash2 size={14} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* RT list */}
+            {expandedDusun === dusun && (
+              <div style={{ padding: "10px 12px", background: "var(--color-card)" }}>
+                {(rtPerDusun[dusun] || []).length === 0 ? (
+                  <p style={{ fontSize: 12, color: "var(--color-txt3)", marginBottom: 8 }}>Belum ada RT.</p>
+                ) : (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 10 }}>
+                    {(rtPerDusun[dusun] || []).map((rt) => (
+                      <div key={rt} style={{
+                        display: "flex", alignItems: "center", gap: 4, padding: "4px 10px",
+                        borderRadius: 20, background: "var(--color-bg)", border: "1px solid var(--color-border)",
+                        fontSize: 13,
+                      }}>
+                        <span style={{ color: "var(--color-txt)" }}>{rt}</span>
+                        <button onClick={() => hapusRT(dusun, rt)}
+                          style={{ color: "var(--color-belum)", background: "none", border: "none", cursor: "pointer", padding: 2, lineHeight: 0 }}>
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    className="input-field"
+                    placeholder="Tambah RT baru..."
+                    value={expandedDusun === dusun ? newRt : ""}
+                    onChange={(e) => setNewRt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && tambahRT(dusun)}
+                    style={{ flex: 1, height: 40 }}
+                  />
+                  <button className="btn-primary" onClick={() => tambahRT(dusun)} disabled={saving || !newRt.trim()}
+                    style={{ padding: "0 14px", height: 40, minWidth: 44 }}>
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// ─── Mode Tunggakan ───────────────────────────────────────────────────────────
+
+function ModeTunggakanSection({ settings, addToast }: {
+  settings: ReturnType<typeof useAppStore>["settings"];
+  addToast: (t: "success" | "error" | "info", m: string) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const isMandiri = settings.modeTunggakan === "mandiri";
+
+  const toggle = async () => {
+    const newMode = isMandiri ? "carryover" : "mandiri";
+    setSaving(true);
+    try {
+      await updateSettings({ modeTunggakan: newMode });
+      addToast("success", `Mode tunggakan: ${newMode === "mandiri" ? "Berdiri Sendiri" : "Carry-over"}`);
+    } catch {
+      addToast("error", "Gagal mengubah mode");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Section icon={<AlertTriangle size={18} />} title="Mode Tunggakan">
+      <div style={{ paddingTop: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>
+              {isMandiri ? "Berdiri Sendiri" : "Carry-over"}
+            </div>
+            <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>
+              {isMandiri
+                ? "Setiap bulan dihitung terpisah"
+                : "Tunggakan dijumlahkan ke tagihan berikutnya"}
+            </div>
+          </div>
+          <button
+            onClick={toggle}
+            disabled={saving}
+            style={{ background: "none", border: "none", cursor: "pointer", color: isMandiri ? "var(--color-txt3)" : "var(--color-primary)" }}
+          >
+            {isMandiri
+              ? <ToggleLeft size={40} strokeWidth={1.5} />
+              : <ToggleRight size={40} strokeWidth={1.5} />}
+          </button>
+        </div>
+
+        <div style={{ background: "var(--color-bg)", borderRadius: 8, padding: 12, fontSize: 13, color: "var(--color-txt3)" }}>
+          <div style={{ marginBottom: 6, fontWeight: 600, color: "var(--color-txt2)" }}>Penjelasan mode:</div>
+          <div style={{ marginBottom: 4 }}>
+            <strong>Berdiri Sendiri:</strong> Tunggakan tiap bulan ditampilkan terpisah. Pelanggan bisa bayar per bulan yang dipilih.
+          </div>
+          <div>
+            <strong>Carry-over:</strong> Total semua tunggakan diakumulasikan dan ditagihkan sekaligus di bulan berikutnya.
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Info Organisasi ──────────────────────────────────────────────────────────
+
+function InfoOrganisasiSection({ settings, addToast }: {
+  settings: ReturnType<typeof useAppStore>["settings"];
+  addToast: (t: "success" | "error" | "info", m: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [namaOrg, setNamaOrg] = useState(settings.namaOrganisasi);
+  const [desa, setDesa] = useState(settings.desa);
+  const [kecamatan, setKecamatan] = useState(settings.kecamatan);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      setNamaOrg(settings.namaOrganisasi);
+      setDesa(settings.desa);
+      setKecamatan(settings.kecamatan);
+    }
+  }, [settings, editing]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateSettings({
+        namaOrganisasi: namaOrg.trim(),
+        desa: desa.trim(),
+        kecamatan: kecamatan.trim(),
+      });
+      addToast("success", "Info organisasi tersimpan");
+      setEditing(false);
+    } catch {
+      addToast("error", "Gagal menyimpan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Section icon={<Settings size={18} />} title="Info Organisasi">
+      <div style={{ paddingTop: 12 }}>
+        {editing ? (
+          <>
+            {[
+              { label: "Nama Organisasi", val: namaOrg, set: setNamaOrg, placeholder: "cth: PAM Desa Karang Sengon" },
+              { label: "Nama Desa", val: desa, set: setDesa, placeholder: "cth: Karang Sengon" },
+              { label: "Kecamatan", val: kecamatan, set: setKecamatan, placeholder: "cth: Banyuputih" },
+            ].map((f) => (
+              <div key={f.label} style={{ marginBottom: 10 }}>
+                <label className="section-label">{f.label}</label>
+                <input className="input-field" value={f.val} onChange={(e) => f.set(e.target.value)} placeholder={f.placeholder} />
+              </div>
+            ))}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-secondary" style={{ flex: 1 }} onClick={() => setEditing(false)} disabled={saving}>Batal</button>
+              <button className="btn-primary" style={{ flex: 2 }} onClick={handleSave} disabled={saving}>
+                <Save size={15} style={{ marginRight: 6 }} />
+                {saving ? "Menyimpan..." : "Simpan"}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {[
+              { label: "Nama Organisasi", val: settings.namaOrganisasi || "-" },
+              { label: "Desa", val: settings.desa || "-" },
+              { label: "Kecamatan", val: settings.kecamatan || "-" },
+            ].map((item) => (
+              <div key={item.label} style={{ marginBottom: 10 }}>
+                <div style={{ fontSize: 12, color: "var(--color-txt3)" }}>{item.label}</div>
+                <div style={{ fontSize: 15, color: "var(--color-txt)", fontWeight: 500 }}>{item.val}</div>
+              </div>
+            ))}
+            <button className="btn-secondary" style={{ width: "100%" }} onClick={() => setEditing(true)}>
+              <Edit2 size={15} style={{ marginRight: 6 }} /> Ubah Info
+            </button>
+          </>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+// ─── Manajemen Akun ───────────────────────────────────────────────────────────
+
+function AccountsSection() {
+  const { userRole } = useAppStore();
+  const [accounts, setAccounts] = useState<UserRole[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getRoles()
+      .then(setAccounts)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <Section icon={<UserCog size={18} />} title="Manajemen Akun">
+      <div style={{ paddingTop: 12 }}>
+        {/* Petunjuk tambah akun manual */}
+        <div style={{
+          background: "rgba(3,105,161,0.08)", borderRadius: 8, padding: 12, marginBottom: 14,
+          border: "1px solid rgba(3,105,161,0.2)",
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-primary)", marginBottom: 6 }}>
+            📌 Cara Menambah Akun
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-txt2)", lineHeight: 1.7 }}>
+            Tambah akun dilakukan manual di <strong>Firebase Console</strong>:
+          </div>
+          <ol style={{ fontSize: 12, color: "var(--color-txt2)", paddingLeft: 18, margin: "6px 0 0", lineHeight: 1.9 }}>
+            <li>Buka Firebase Console → <strong>Authentication → Users → Add user</strong></li>
+            <li>Isi email dan password, catat <strong>UID</strong> yang muncul</li>
+            <li>Buka <strong>Firestore → Collection: <code style={{ background: "var(--color-bg)", padding: "1px 4px", borderRadius: 3 }}>roles</code></strong></li>
+            <li>Tambah dokumen baru dengan <strong>Document ID = UID</strong> tersebut</li>
+            <li>Isi fields sesuai contoh di bawah</li>
+          </ol>
+          <div style={{ marginTop: 10 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", marginBottom: 4 }}>
+              Contoh untuk Admin:
+            </div>
+            <div style={{
+              background: "var(--color-bg)", borderRadius: 6, padding: 8, fontFamily: "monospace",
+              fontSize: 11, color: "var(--color-txt2)", lineHeight: 1.8,
+            }}>
+              <div><span style={{ color: "var(--color-primary)" }}>role</span>: <span style={{ color: "var(--color-lunas)" }}>"admin"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>nama</span>: <span style={{ color: "var(--color-lunas)" }}>"Budi Santoso"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>email</span>: <span style={{ color: "var(--color-lunas)" }}>"budi@gmail.com"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>createdAt</span>: <span style={{ color: "var(--color-txt3)" }}>timestamp (klik "Set to now")</span></div>
+            </div>
+          </div>
+          <div style={{ marginTop: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", marginBottom: 4 }}>
+              Contoh untuk Penagih:
+            </div>
+            <div style={{
+              background: "var(--color-bg)", borderRadius: 6, padding: 8, fontFamily: "monospace",
+              fontSize: 11, color: "var(--color-txt2)", lineHeight: 1.8,
+            }}>
+              <div><span style={{ color: "var(--color-primary)" }}>role</span>: <span style={{ color: "var(--color-tunggakan)" }}>"penagih"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>nama</span>: <span style={{ color: "var(--color-lunas)" }}>"Pak Slamet"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>email</span>: <span style={{ color: "var(--color-lunas)" }}>"slamet@gmail.com"</span></div>
+              <div><span style={{ color: "var(--color-primary)" }}>createdAt</span>: <span style={{ color: "var(--color-txt3)" }}>timestamp (klik "Set to now")</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Daftar akun */}
+        <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt2)", marginBottom: 8 }}>
+          Daftar Akun Terdaftar
+        </div>
+        {loading ? (
+          <p style={{ fontSize: 13, color: "var(--color-txt3)" }}>Memuat...</p>
+        ) : accounts.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--color-txt3)" }}>Belum ada akun.</p>
+        ) : accounts.map((acc) => (
+          <div key={acc.uid} style={{
+            display: "flex", alignItems: "center", gap: 12, padding: "10px 12px",
+            borderRadius: 8, background: "var(--color-bg)", marginBottom: 6,
+            border: acc.uid === userRole?.uid ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              background: acc.role === "admin" ? "rgba(3,105,161,0.12)" : "rgba(146,64,14,0.1)",
+              flexShrink: 0,
+            }}>
+              <Users size={16} style={{ color: acc.role === "admin" ? "var(--color-primary)" : "var(--color-tunggakan)" }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontWeight: 600, fontSize: 14, color: "var(--color-txt)" }}>{acc.nama}</span>
+                {acc.uid === userRole?.uid && (
+                  <span style={{ fontSize: 10, background: "var(--color-primary)", color: "#fff", padding: "1px 6px", borderRadius: 10 }}>Anda</span>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: "var(--color-txt3)", marginTop: 2 }}>{acc.email}</div>
+            </div>
+            <div style={{
+              fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 20,
+              background: acc.role === "admin" ? "rgba(3,105,161,0.12)" : "rgba(146,64,14,0.1)",
+              color: acc.role === "admin" ? "var(--color-primary)" : "var(--color-tunggakan)",
+            }}>
+              {acc.role === "admin" ? "Admin" : "Penagih"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
+// ─── Backup & Restore ─────────────────────────────────────────────────────────
+
+function BackupSection({ addToast, showConfirm }: {
+  addToast: (t: "success" | "error" | "info", m: string) => void;
+  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+}) {
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const data = await exportBackup();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const date = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `airku-backup-${date}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      addToast("success", "Backup berhasil diunduh");
+    } catch {
+      addToast("error", "Gagal membuat backup");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string) as BackupData;
+        if (!data.version || !data.members || !data.tagihan) {
+          addToast("error", "File backup tidak valid");
+          return;
+        }
+        const totalDocs = data.members.length + data.tagihan.length +
+          data.operasional.length + data.activityLog.length + data.hargaHistory.length;
+
+        showConfirm(
+          "Konfirmasi Import Backup",
+          `File backup berisi:\n• ${data.members.length} pelanggan\n• ${data.tagihan.length} tagihan\n• ${data.operasional.length} operasional\n• ${data.activityLog.length} log\n• ${data.hargaHistory.length} riwayat harga\n\nTotal ${totalDocs} dokumen.\n\nData yang sudah ada akan di-overwrite jika ID-nya sama. Lanjutkan?`,
+          async () => {
+            setImporting(true);
+            try {
+              await importBackup(data);
+              addToast("success", `Import selesai — ${totalDocs} dokumen dipulihkan`);
+            } catch {
+              addToast("error", "Gagal mengimpor backup");
+            } finally {
+              setImporting(false);
+            }
+          },
+          true
+        );
+      } catch {
+        addToast("error", "File tidak dapat dibaca. Pastikan file backup yang benar.");
+      }
+    };
+    reader.readAsText(file);
+    // reset input
+    e.target.value = "";
+  };
+
+  return (
+    <Section icon={<Download size={18} />} title="Backup & Restore Data">
+      <div style={{ paddingTop: 14 }}>
+        <div style={{ fontSize: 13, color: "var(--color-txt3)", marginBottom: 14, lineHeight: 1.6 }}>
+          Backup mengunduh <strong>semua data</strong> (pelanggan, tagihan, operasional, log, riwayat harga, pengaturan) dalam satu file JSON. Simpan di tempat aman.
+        </div>
+
+        <button className="btn-primary" style={{ width: "100%", marginBottom: 10 }} onClick={handleExport} disabled={exporting}>
+          <Download size={16} style={{ marginRight: 8 }} />
+          {exporting ? "Mengekspor..." : "Download Backup Sekarang"}
+        </button>
+
+        <button
+          className="btn-secondary"
+          style={{ width: "100%" }}
+          onClick={() => fileRef.current?.click()}
+          disabled={importing}
+        >
+          <Upload size={16} style={{ marginRight: 8 }} />
+          {importing ? "Mengimpor..." : "Import dari File Backup"}
+        </button>
+        <input ref={fileRef} type="file" accept=".json" style={{ display: "none" }} onChange={handleFileSelect} />
+
+        <div style={{
+          marginTop: 12, padding: 10, borderRadius: 8,
+          background: "rgba(185,28,28,0.06)", border: "1px solid rgba(185,28,28,0.15)",
+        }}>
+          <div style={{ fontSize: 12, color: "var(--color-belum)", fontWeight: 700, marginBottom: 4 }}>⚠️ Perhatian</div>
+          <div style={{ fontSize: 12, color: "var(--color-txt3)", lineHeight: 1.6 }}>
+            Import tidak menghapus data yang ada terlebih dahulu. Dokumen dengan ID yang sama akan ditimpa.
+            Lakukan backup sebelum import untuk keamanan.
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─── Info App ─────────────────────────────────────────────────────────────────
+
+function InfoAppSection() {
+  const { settings } = useAppStore();
+  const items = [
+    { label: "Nama Aplikasi", val: APP_NAME },
+    { label: "Versi Aplikasi", val: APP_VERSION },
+    { label: "Versi Data", val: settings.versi || "1.0.0" },
+    { label: "Firebase Project", val: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "-" },
+    { label: "Auth Domain", val: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "-" },
+  ];
+
+  return (
+    <Section icon={<Info size={18} />} title="Informasi Aplikasi">
+      <div style={{ paddingTop: 12 }}>
+        {items.map((item) => (
+          <div key={item.label} style={{
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            padding: "8px 0", borderBottom: "1px solid var(--color-border)",
+          }}>
+            <span style={{ fontSize: 13, color: "var(--color-txt3)" }}>{item.label}</span>
+            <span style={{ fontSize: 13, color: "var(--color-txt)", fontWeight: 600, fontFamily: "monospace", maxWidth: "60%", wordBreak: "break-all", textAlign: "right" }}>{item.val}</span>
+          </div>
+        ))}
+        <div style={{ marginTop: 16, textAlign: "center" }}>
+          <div style={{ fontSize: 28, marginBottom: 6 }}>💧</div>
+          <div style={{ fontSize: 13, color: "var(--color-txt3)" }}>
+            {APP_NAME} — Sistem Iuran Air Desa
+          </div>
+          <div style={{ fontSize: 12, color: "var(--color-txt3)", marginTop: 4 }}>
+            Dibuat untuk kemudahan pengelolaan PAM Desa
+          </div>
+        </div>
+      </div>
+    </Section>
+  );
+}

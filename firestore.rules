@@ -1,0 +1,107 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AirKu — Firestore Security Rules
+// Prinsip: hanya user yang sudah login (Firebase Auth) yang bisa akses.
+// Akun ditambahkan manual di Firebase Console — tidak ada registrasi mandiri.
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ──────────────────────────────────────────────────
+
+    // Cek user sudah login
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Ambil data role user dari /roles/{uid}
+    function getUserRole() {
+      return get(/databases/$(database)/documents/roles/$(request.auth.uid)).data;
+    }
+
+    // Cek apakah user adalah admin
+    function isAdmin() {
+      return isSignedIn() && getUserRole().role == "admin";
+    }
+
+    // Cek apakah user adalah penagih
+    function isPenagih() {
+      return isSignedIn() && getUserRole().role == "penagih";
+    }
+
+    // Cek apakah user adalah admin ATAU penagih (akun valid terdaftar)
+    function isValidUser() {
+      return isSignedIn() && getUserRole().role in ["admin", "penagih"];
+    }
+
+    // ─── /roles/{uid} ─────────────────────────────────────────────────────
+    // Admin: baca semua, tidak bisa tulis dari app (hanya via Console)
+    // Penagih: hanya bisa baca dokumen miliknya sendiri
+    // Tidak ada yang bisa write dari app — semua akun dikelola manual
+    match /roles/{uid} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
+      allow write: if false; // Hanya Firebase Console / Admin SDK
+    }
+
+    // ─── /settings/main ───────────────────────────────────────────────────
+    // Admin: baca + tulis
+    // Penagih: baca saja (perlu baca settings untuk kalkulasi tagihan & lock)
+    match /settings/main {
+      allow read: if isValidUser();
+      allow write: if isAdmin();
+    }
+
+    // ─── /hargaHistory/{id} ───────────────────────────────────────────────
+    // Admin: baca + tulis (simpan saat ubah tarif)
+    // Penagih: baca saja (perlu untuk snapshot harga tagihan)
+    match /hargaHistory/{id} {
+      allow read: if isValidUser();
+      allow create, update: if isAdmin();
+      allow delete: if false; // Riwayat harga tidak boleh dihapus
+    }
+
+    // ─── /members/{id} ────────────────────────────────────────────────────
+    // Admin: CRUD penuh
+    // Penagih: baca saja (perlu untuk entry meter dan tagihan)
+    match /members/{id} {
+      allow read: if isValidUser();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── /tagihan/{id} ────────────────────────────────────────────────────
+    // Admin: CRUD penuh (baca, tambah, tandai lunas, hapus)
+    // Penagih: baca + tambah (entry meter) + update status (tandai lunas)
+    //          Penagih TIDAK bisa hapus tagihan
+    match /tagihan/{id} {
+      allow read: if isValidUser();
+      allow create: if isValidUser(); // Admin dan penagih bisa entry meter
+      allow update: if isValidUser(); // Admin dan penagih bisa tandai lunas
+      allow delete: if isAdmin();     // Hanya admin yang bisa hapus tagihan
+    }
+
+    // ─── /operasional/{id} ────────────────────────────────────────────────
+    // Admin only: semua operasi
+    // Penagih: tidak ada akses
+    match /operasional/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── /activityLog/{id} ────────────────────────────────────────────────
+    // Admin: baca semua log
+    // Penagih: hanya bisa tulis (saveActivityLog) — tidak bisa baca
+    // Tidak ada yang bisa delete dari app (trim dilakukan via Admin SDK / batch)
+    match /activityLog/{id} {
+      allow read: if isAdmin();
+      allow create: if isValidUser(); // Kedua role bisa catat aktivitas
+      allow update, delete: if false; // Log tidak boleh diubah/dihapus dari app
+    }
+
+    // ─── Blokir semua path lain ────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
