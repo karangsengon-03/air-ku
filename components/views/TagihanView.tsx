@@ -134,7 +134,7 @@ function TagihanCard({
           </div>
           <div className="text-xs mt-0.5" style={{ color: "var(--color-txt3)" }}>
             Entry: {formatTanggal(item.tanggalEntry)}
-            {lunas && item.tanggalBayar && (
+            {lunas && (item.tanggalBayar as boolean) && (
               <> · Bayar: {formatTanggal(item.tanggalBayar)}</>
             )}
           </div>

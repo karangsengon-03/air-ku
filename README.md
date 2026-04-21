@@ -666,6 +666,11 @@ Diskusi lengkap konsep, fitur, role, UI/UX, data model. Tidak ada file project.
 - Import tidak hapus data lama — dokumen ID sama di-overwrite (upsert)
 - `firestore.rules` deploy manual: `firebase deploy --only firestore:rules`
 
+**Hot-fix setelah Sesi 6 (build error Vercel):**
+- 6 page files (`dashboard`, `entry`, `log`, `members`, `operasional`, `settings`) ditambah `"use client"` — Next.js 16 Turbopack melarang `ssr: false` di Server Component
+- `TagihanView.tsx` line 137: cast `item.tanggalBayar as boolean` — type `unknown` tidak bisa langsung jadi ReactNode condition
+- Build lokal verified: 16 routes, 0 TypeScript error, 0 warning
+
 ---
 
 ### 🔜 Sesi 7 — QA Final + Bug Fix + Production Ready

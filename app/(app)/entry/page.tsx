@@ -1,3 +1,4 @@
+"use client";
 import dynamic from "next/dynamic";
 
 const EntryView = dynamic(() => import("@/components/views/EntryView"), {

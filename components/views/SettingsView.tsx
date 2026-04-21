@@ -13,7 +13,7 @@ import {
   getRoles, exportBackup, importBackup, BackupData,
 } from "@/lib/db";
 import { saveActivityLog } from "@/lib/db";
-import { HargaHistory, UserRole } from "@/types";
+import { AppSettings, HargaHistory, UserRole } from "@/types";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 
@@ -80,10 +80,10 @@ export default function SettingsView() {
 // ─── Tarif ────────────────────────────────────────────────────────────────────
 
 function TarifSection({ settings, userRole, addToast, showConfirm }: {
-  settings: ReturnType<typeof useAppStore>["settings"];
-  userRole: ReturnType<typeof useAppStore>["userRole"];
+  settings: AppSettings;
+  userRole: UserRole | null;
   addToast: (t: "success" | "error" | "info", m: string) => void;
-  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+  showConfirm: (title: string, message: string, onConfirm: () => void, danger?: boolean) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [abonemen, setAbonemen] = useState(String(settings.abonemen));
@@ -271,9 +271,9 @@ function TarifSection({ settings, userRole, addToast, showConfirm }: {
 // ─── Dusun & RT ───────────────────────────────────────────────────────────────
 
 function DusunRTSection({ settings, addToast, showConfirm }: {
-  settings: ReturnType<typeof useAppStore>["settings"];
+  settings: AppSettings;
   addToast: (t: "success" | "error" | "info", m: string) => void;
-  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+  showConfirm: (title: string, message: string, onConfirm: () => void, danger?: boolean) => void;
 }) {
   const [newDusun, setNewDusun] = useState("");
   const [editingDusun, setEditingDusun] = useState<string | null>(null);
@@ -469,7 +469,7 @@ function DusunRTSection({ settings, addToast, showConfirm }: {
 // ─── Mode Tunggakan ───────────────────────────────────────────────────────────
 
 function ModeTunggakanSection({ settings, addToast }: {
-  settings: ReturnType<typeof useAppStore>["settings"];
+  settings: AppSettings;
   addToast: (t: "success" | "error" | "info", m: string) => void;
 }) {
   const [saving, setSaving] = useState(false);
@@ -530,7 +530,7 @@ function ModeTunggakanSection({ settings, addToast }: {
 // ─── Info Organisasi ──────────────────────────────────────────────────────────
 
 function InfoOrganisasiSection({ settings, addToast }: {
-  settings: ReturnType<typeof useAppStore>["settings"];
+  settings: AppSettings;
   addToast: (t: "success" | "error" | "info", m: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -722,7 +722,7 @@ function AccountsSection() {
 
 function BackupSection({ addToast, showConfirm }: {
   addToast: (t: "success" | "error" | "info", m: string) => void;
-  showConfirm: ReturnType<typeof useAppStore>["showConfirm"];
+  showConfirm: (title: string, message: string, onConfirm: () => void, danger?: boolean) => void;
 }) {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
