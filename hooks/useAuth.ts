@@ -17,9 +17,13 @@ export function useAuth() {
           if (roleSnap.exists()) {
             setUserRole({ uid: user.uid, ...roleSnap.data() } as Parameters<typeof setUserRole>[0]);
           } else {
+            // User Auth ada tapi belum punya dokumen /roles/{uid}
+            // Tetap login tapi role null — Settings menu tidak akan muncul
+            console.warn("User tidak punya dokumen roles. Buat di Firestore Console: /roles/" + user.uid);
             setUserRole(null);
           }
-        } catch {
+        } catch (error) {
+          console.warn("useAuth error:", error);
           setUserRole(null);
         }
       } else {

@@ -1,5 +1,6 @@
 export const APP_NAME = "AirKu";
 export const APP_VERSION = "1.0.0";
+export const APP_SUBTITLE = "Sistem Iuran Air Desa";
 
 export const MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -7,11 +8,21 @@ export const MONTHS = [
 ];
 
 export const CURRENT_YEAR = new Date().getFullYear();
-export const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i);
+// Tahun dari 2024 sampai tahun sekarang +2 (misal 2026 → 2024, 2025, 2026, 2027, 2028)
+export const YEARS = Array.from(
+  { length: CURRENT_YEAR - 2024 + 3 },
+  (_, i) => 2024 + i
+);
+
+export const DESA_INFO = {
+  nama: "Desa Karang Sengon",
+  kecamatan: "Kecamatan Klabang",
+  kabupaten: "Kabupaten Bondowoso",
+};
 
 export const PAGE_TITLES: Record<string, string> = {
   dashboard: "Beranda",
-  entry: "Entry Meter",
+  entry: "Entry / Bayar",
   tagihan: "Tagihan",
   rekap: "Rekap",
   tunggakan: "Tunggakan",
@@ -38,3 +49,6 @@ export const PAGE_ICONS: Record<string, string> = {
 };
 
 export const MAX_LOG_ENTRIES = 500;
+
+// QuickPay nominal presets (dalam ribuan rupiah)
+export const QUICKPAY_PRESETS = [25, 27, 28, 30, 35, 40, 50];
