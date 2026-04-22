@@ -65,7 +65,7 @@ export default function SettingsView() {
   }
 
   return (
-    <div style={{ paddingBottom: 100 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       <TarifSection settings={settings} userRole={userRole} addToast={addToast} showConfirm={showConfirm} />
       <DusunRTSection settings={settings} addToast={addToast} showConfirm={showConfirm} />
       <ModeTunggakanSection settings={settings} addToast={addToast} />

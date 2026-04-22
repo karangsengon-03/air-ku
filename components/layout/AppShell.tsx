@@ -55,16 +55,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const title = PAGE_TITLES[segment] || "AirKu";
 
   return (
-    <div style={{ minHeight: "100svh", background: "var(--color-bg)", display: "flex", flexDirection: "column" }}>
+    // id="app-shell" → display:flex flex-direction:column height:100svh overflow:hidden
+    <div id="app-shell">
       <LockBanner />
       <Header title={title} />
-      {/* main scrollable, padding bawah 80px agar tidak tertutup bottom nav */}
-      <main style={{
-        flex: 1,
-        overflowY: "auto",
-        padding: "12px 12px 80px",
-        WebkitOverflowScrolling: "touch",
-      }}>
+      {/* id="app-main" → flex:1 overflow-y:auto — SATU-SATUNYA area scroll */}
+      <main id="app-main">
         {children}
       </main>
       <BottomNav />

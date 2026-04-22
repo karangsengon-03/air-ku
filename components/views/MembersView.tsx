@@ -447,14 +447,8 @@ export default function MembersView() {
 
       {/* ── Modal Tambah / Edit */}
       {modalOpen && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 50,
-          display: "flex", alignItems: "flex-end", justifyContent: "center",
-        }}>
-          <div className="card" style={{
-            width: "100%", maxWidth: 520,
-            maxHeight: "calc(100vh - 60px)",
-            overflowY: "auto",
+        <div className="bottom-sheet">
+          <div className="bottom-sheet-content card" style={{
             borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
             borderTopLeftRadius: 20, borderTopRightRadius: 20,
             padding: "20px 20px 32px",
@@ -623,17 +617,11 @@ export default function MembersView() {
 
       {/* ── Modal Detail Riwayat */}
       {detailMember && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 50,
-          display: "flex", alignItems: "flex-end", justifyContent: "center",
-        }}>
-          <div className="card" style={{
-            width: "100%", maxWidth: 520,
-            maxHeight: "calc(100vh - 80px)",
-            overflowY: "auto",
+        <div className="bottom-sheet">
+          <div className="bottom-sheet-content card" style={{
             borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
             borderTopLeftRadius: 20, borderTopRightRadius: 20,
-            padding: "20px 20px 100px",
+            padding: "20px 16px 32px",
           }}>
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
