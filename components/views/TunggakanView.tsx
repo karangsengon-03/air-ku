@@ -252,7 +252,7 @@ function TunggakanGroupCard({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function TunggakanView() {
-  const { settings, activeBulan, activeTahun, userRole, showConfirm, addToast } =
+  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, addToast } =
     useAppStore();
 
   const isLocked = settings.globalLock;
@@ -262,6 +262,7 @@ export default function TunggakanView() {
 
   // ── Fetch (bukan realtime — query tunggakan agak complex) ───────────────────
   const fetchTunggakan = useCallback(async () => {
+    if (!firebaseUser) return;
     setLoading(true);
     try {
       const data = await getTagihanBelumBayarSebelumBulanIni(

@@ -51,18 +51,24 @@ export function listenTagihan(
   tahun: number,
   callback: (tagihan: Tagihan[]) => void
 ): () => void {
+  // Tanpa orderBy — hindari kebutuhan composite index Firestore
+  // Sort dilakukan di client side
   const q = query(
     collection(db, "tagihan"),
     where("bulan", "==", bulan),
-    where("tahun", "==", tahun),
-    orderBy("memberNama", "asc")
+    where("tahun", "==", tahun)
   );
   return onSnapshot(q, (snap) => {
     const list: Tagihan[] = snap.docs.map((d) => ({
       id: d.id,
       ...(d.data() as Omit<Tagihan, "id">),
     }));
+    // Sort by memberNama di client
+    list.sort((a, b) => a.memberNama.localeCompare(b.memberNama, "id"));
     callback(list);
+  }, (error) => {
+    console.error("listenTagihan error:", error.code, error.message);
+    callback([]);
   });
 }
 
@@ -226,11 +232,10 @@ export async function getTagihanBelumBayarSebelumBulanIni(
 ): Promise<Tagihan[]> {
   // ambil semua tagihan belum lunas sebelum bulan aktif
   // kita filter: (tahun < tahunAktif) ATAU (tahun == tahunAktif && bulan < bulanAktif)
+  // Tanpa orderBy — filter dan sort di client
   const q = query(
     collection(db, "tagihan"),
-    where("status", "==", "belum"),
-    orderBy("tahun", "asc"),
-    orderBy("bulan", "asc")
+    where("status", "==", "belum")
   );
   const snap = await getDocs(q);
   const all: Tagihan[] = snap.docs.map((d) => ({
@@ -252,11 +257,11 @@ export function listenOperasional(
   tahun: number,
   callback: (list: import("@/types").Operasional[]) => void
 ): () => void {
+  // Tanpa orderBy untuk hindari composite index
   const q = query(
     collection(db, "operasional"),
     where("bulan", "==", bulan),
-    where("tahun", "==", tahun),
-    orderBy("tanggal", "desc")
+    where("tahun", "==", tahun)
   );
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({
@@ -274,8 +279,7 @@ export async function getTagihanByTahun(
 ): Promise<Tagihan[]> {
   const q = query(
     collection(db, "tagihan"),
-    where("tahun", "==", tahun),
-    orderBy("bulan", "asc")
+    where("tahun", "==", tahun)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({
@@ -291,8 +295,7 @@ export async function getOperasionalByTahun(
 ): Promise<import("@/types").Operasional[]> {
   const q = query(
     collection(db, "operasional"),
-    where("tahun", "==", tahun),
-    orderBy("bulan", "asc")
+    where("tahun", "==", tahun)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({
@@ -307,17 +310,19 @@ export async function getTagihanRekap(
   bulan: number,
   tahun: number
 ): Promise<Tagihan[]> {
+  // Tanpa orderBy — sort di client untuk hindari composite index
   const q = query(
     collection(db, "tagihan"),
     where("bulan", "==", bulan),
-    where("tahun", "==", tahun),
-    orderBy("memberNama", "asc")
+    where("tahun", "==", tahun)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({
+  const list = snap.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Omit<Tagihan, "id">),
   }));
+  list.sort((a, b) => a.memberNama.localeCompare(b.memberNama, "id"));
+  return list;
 }
 
 // ─── Simpan operasional ───────────────────────────────────────────────────────
@@ -386,12 +391,12 @@ export async function cekNomorSambunganTerpakai(
 export async function getTagihanByMember(memberId: string): Promise<Tagihan[]> {
   const q = query(
     collection(db, "tagihan"),
-    where("memberId", "==", memberId),
-    orderBy("tahun", "desc"),
-    orderBy("bulan", "desc")
+    where("memberId", "==", memberId)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Tagihan, "id">) }));
+  const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Tagihan, "id">) }));
+  list.sort((a, b) => b.tahun !== a.tahun ? b.tahun - a.tahun : b.bulan - a.bulan);
+  return list;
 }
 
 // ─── Activity Log listener ────────────────────────────────────────────────────

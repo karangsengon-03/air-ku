@@ -121,8 +121,7 @@ function SectionHeader({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function GrafikView() {
-  const { activeTahun, setActiveBulanTahun, activeBulan, addToast } =
-    useAppStore();
+  const { activeTahun, setActiveBulanTahun, activeBulan, addToast, firebaseUser } = useAppStore();
 
   const [bulanData, setBulanData] = useState<BulanData[]>([]);
   const [dusunData, setDusunData] = useState<DusunData[]>([]);
@@ -132,6 +131,7 @@ export default function GrafikView() {
 
   // ── Fetch & proses data ──────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
+    if (!firebaseUser) return;
     setLoading(true);
     try {
       const [tagihan, ops] = await Promise.all([

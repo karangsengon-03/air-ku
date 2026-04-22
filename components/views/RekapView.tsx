@@ -31,6 +31,7 @@ export default function RekapView() {
     setActiveBulanTahun,
     userRole,
     addToast,
+    firebaseUser,
   } = useAppStore();
 
   const isAdmin = userRole?.role === "admin";
@@ -45,6 +46,7 @@ export default function RekapView() {
 
   // ── Fetch data ──────────────────────────────────────────────────────────────
   const fetchData = useCallback(async () => {
+    if (!firebaseUser) return;
     setLoading(true);
     try {
       const [tagihan, ops] = await Promise.all([
@@ -68,7 +70,7 @@ export default function RekapView() {
     } finally {
       setLoading(false);
     }
-  }, [activeBulan, activeTahun, addToast]);
+  }, [activeBulan, activeTahun, addToast, firebaseUser]);
 
   useEffect(() => {
     fetchData();

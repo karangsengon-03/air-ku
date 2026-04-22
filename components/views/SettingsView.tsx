@@ -279,7 +279,9 @@ function DusunRTSection({ settings, addToast, showConfirm }: {
   const [editingDusun, setEditingDusun] = useState<string | null>(null);
   const [editDusunVal, setEditDusunVal] = useState("");
   const [expandedDusun, setExpandedDusun] = useState<string | null>(null);
-  const [newRt, setNewRt] = useState("");
+  const [newRtMap, setNewRtMap] = useState<Record<string, string>>({});
+  const getNewRt = (dusun: string) => newRtMap[dusun] ?? "";
+  const setNewRt = (dusun: string, val: string) => setNewRtMap(prev => ({ ...prev, [dusun]: val }));
   const [saving, setSaving] = useState(false);
 
   const dusunList = settings.dusunList || [];
@@ -335,13 +337,14 @@ function DusunRTSection({ settings, addToast, showConfirm }: {
   };
 
   const tambahRT = async (dusun: string) => {
-    const rt = newRt.trim();
+    const rt = getNewRt(dusun).trim();
     if (!rt) return;
     const current = rtPerDusun[dusun] || [];
     if (current.includes(rt)) { addToast("error", "RT sudah ada"); return; }
-    const newList = [...current, rt].sort();
+    // Sort sebagai string — "005" < "006" < "010" secara leksikografis
+    const newList = [...current, rt].sort((a, b) => a.localeCompare(b, "id", { numeric: false }));
     await save({ rtPerDusun: { ...rtPerDusun, [dusun]: newList } });
-    setNewRt("");
+    setNewRt(dusun, "");
   };
 
   const hapusRT = (dusun: string, rt: string) => {
@@ -358,6 +361,8 @@ function DusunRTSection({ settings, addToast, showConfirm }: {
         <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
           <input
             className="input-field"
+            type="text"
+            inputMode="text"
             placeholder="Nama dusun baru..."
             value={newDusun}
             onChange={(e) => setNewDusun(e.target.value)}
@@ -446,13 +451,15 @@ function DusunRTSection({ settings, addToast, showConfirm }: {
                 <div style={{ display: "flex", gap: 8 }}>
                   <input
                     className="input-field"
-                    placeholder="Tambah RT baru..."
-                    value={expandedDusun === dusun ? newRt : ""}
-                    onChange={(e) => setNewRt(e.target.value)}
+                    type="text"
+                    inputMode="text"
+                    placeholder="cth: 001, 002, RT 01..."
+                    value={getNewRt(dusun)}
+                    onChange={(e) => setNewRt(dusun, e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && tambahRT(dusun)}
                     style={{ flex: 1, height: 40 }}
                   />
-                  <button className="btn-primary" onClick={() => tambahRT(dusun)} disabled={saving || !newRt.trim()}
+                  <button className="btn-primary" onClick={() => tambahRT(dusun)} disabled={saving || !getNewRt(dusun).trim()}
                     style={{ padding: "0 14px", height: 40, minWidth: 44 }}>
                     <Plus size={16} />
                   </button>
