@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useSettings } from "@/hooks/useSettings";
+import { useData } from "@/hooks/useData";
 import { useAppStore } from "@/store/useAppStore";
 import { PAGE_TITLES } from "@/lib/constants";
 import Header from "./Header";
@@ -15,12 +16,13 @@ import Confirm from "@/components/ui/Confirm";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   useAuth();
   useSettings();
+  useData(); // ← global listener: members + tagihan → store
 
-  const { authLoading, firebaseUser, userRole, darkMode, setIsOnline } = useAppStore();
+  const { authLoading, firebaseUser, darkMode, setIsOnline } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Init dark mode from localStorage
+  // Init dark mode dari localStorage
   useEffect(() => {
     const saved = localStorage.getItem("airku-dark");
     if (saved === "1") {
@@ -29,7 +31,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Online/offline detection
+  // Online/offline
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
@@ -52,7 +54,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   if (authLoading) return <LoadingScreen />;
   if (!firebaseUser) return null;
 
-  // Determine page title from pathname
   const segment = pathname.split("/")[1] || "dashboard";
   const title = PAGE_TITLES[segment] || "AirKu";
 
@@ -60,7 +61,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <div style={{ minHeight: "100svh", background: "var(--color-bg)" }}>
       <LockBanner />
       <Header title={title} />
-      <main className="pb-safe" style={{ padding: "16px 16px 0" }}>
+      <main style={{ padding: "12px 12px 100px" }}>
         {children}
       </main>
       <BottomNav />

@@ -1,567 +1,182 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
-import {
-  CheckCircle2,
-  Clock,
-  Trash2,
-  Share2,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  X,
-  Droplets,
-  Filter,
-} from "lucide-react";
+import { useState } from "react";
+import { CheckCircle2, Clock, Share2, Download, Search, X, Droplets, Filter } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import {
-  listenTagihan,
-  updateTagihanStatus,
-  deleteTagihan,
-  saveActivityLog,
-} from "@/lib/db";
 import { formatRp, formatM3, formatTanggal } from "@/lib/helpers";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
-import { MONTHS, YEARS } from "@/lib/constants";
+import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
 
-// ─── Filter type ──────────────────────────────────────────────────────────────
 type FilterStatus = "semua" | "lunas" | "belum";
 
-// ─── Stat card mini ───────────────────────────────────────────────────────────
-function StatMini({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: string;
-  color: string;
-}) {
-  return (
-    <div
-      className="card p-3 flex-1 min-w-0"
-      style={{ borderLeft: `3px solid ${color}` }}
-    >
-      <div className="section-label mb-1">{label}</div>
-      <div
-        className="mono font-bold text-base leading-tight"
-        style={{ color }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-// ─── Tagihan card ─────────────────────────────────────────────────────────────
-function TagihanCard({
-  item,
-  isAdmin,
-  isLocked,
-  onTandaiLunas,
-  onHapus,
-  onShare,
-  onDownload,
-}: {
-  item: Tagihan;
-  isAdmin: boolean;
-  isLocked: boolean;
-  onTandaiLunas: (t: Tagihan) => void;
-  onHapus: (t: Tagihan) => void;
-  onShare: (t: Tagihan) => void;
-  onDownload: (t: Tagihan) => void;
-}) {
-  const lunas = item.status === "lunas";
-
-  return (
-    <div
-      className="card p-4"
-      style={{
-        borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : "var(--color-belum)"}`,
-        opacity: lunas ? 0.85 : 1,
-      }}
-    >
-      {/* Baris atas: nama + badge */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex-1 min-w-0">
-          <div
-            className="font-bold text-base leading-tight truncate"
-            style={{ color: "var(--color-txt)" }}
-          >
-            {item.memberNama}
-          </div>
-          <div
-            className="text-xs mt-0.5"
-            style={{ color: "var(--color-txt3)" }}
-          >
-            No. {item.memberNomorSambungan} ·{" "}
-            {item.memberDusun ? `${item.memberDusun} / ` : ""}RT {item.memberRT}
-          </div>
-        </div>
-        <span className={lunas ? "badge-lunas" : "badge-belum"}>
-          {lunas ? <CheckCircle2 size={11} /> : <Clock size={11} />}
-          {lunas ? "Lunas" : "Belum"}
-        </span>
-      </div>
-
-      {/* Meter & pemakaian */}
-      <div
-        className="flex gap-3 text-sm mb-3 flex-wrap"
-        style={{ color: "var(--color-txt2)" }}
-      >
-        <span>
-          <span style={{ color: "var(--color-txt3)" }}>Meter: </span>
-          <span className="mono">
-            {item.meterAwal} → {item.meterAkhir}
-          </span>
-        </span>
-        <span>
-          <span style={{ color: "var(--color-txt3)" }}>Pakai: </span>
-          <span className="mono font-semibold">{formatM3(item.pemakaian)}</span>
-        </span>
-      </div>
-
-      {/* Total & tanggal */}
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <div
-            className="mono text-xl font-bold"
-            style={{ color: "var(--color-primary)" }}
-          >
-            {formatRp(item.total)}
-          </div>
-          <div className="text-xs mt-0.5" style={{ color: "var(--color-txt3)" }}>
-            Entry: {formatTanggal(item.tanggalEntry)}
-            {lunas && (item.tanggalBayar as boolean) && (
-              <> · Bayar: {formatTanggal(item.tanggalBayar)}</>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Catatan */}
-      {item.catatan && (
-        <div
-          className="text-xs italic mb-3 px-2 py-1.5 rounded"
-          style={{
-            background: "var(--color-bg)",
-            color: "var(--color-txt3)",
-            border: "1px solid var(--color-border)",
-          }}
-        >
-          {item.catatan}
-        </div>
-      )}
-
-      {/* Tombol aksi */}
-      <div className="flex gap-2 flex-wrap">
-        {/* Tandai lunas / belum */}
-        {!isLocked && (
-          <button
-            onClick={() => onTandaiLunas(item)}
-            className={lunas ? "btn-secondary flex-1" : "btn-primary flex-1"}
-            style={{ height: 44, fontSize: 13 }}
-          >
-            {lunas ? (
-              <>
-                <Clock size={14} /> Tandai Belum
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={14} /> Tandai Lunas
-              </>
-            )}
-          </button>
-        )}
-
-        {/* Share WA */}
-        <button
-          onClick={() => onShare(item)}
-          className="btn-secondary"
-          style={{ height: 44, width: 44, padding: 0 }}
-          title="Kirim ke WA"
-        >
-          <Share2 size={16} />
-        </button>
-
-        {/* Download PDF */}
-        <button
-          onClick={() => onDownload(item)}
-          className="btn-secondary"
-          style={{ height: 44, width: 44, padding: 0 }}
-          title="Download PDF"
-        >
-          <Download size={16} />
-        </button>
-
-        {/* Hapus (admin only) */}
-        {isAdmin && !isLocked && (
-          <button
-            onClick={() => onHapus(item)}
-            className="btn-danger"
-            style={{ height: 44, width: 44, padding: 0, borderRadius: 8 }}
-            title="Hapus tagihan"
-          >
-            <Trash2 size={16} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Component ───────────────────────────────────────────────────────────
-
 export default function TagihanView() {
-  const {
-    settings,
-    activeBulan,
-    activeTahun,
-    setActiveBulanTahun,
-    userRole,
-    showConfirm,
-    addToast,
-  } = useAppStore();
-
-  const isAdmin = userRole?.role === "admin";
-  const isLocked = settings.globalLock;
-
-  const [tagihan, setTagihan] = useState<Tagihan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { tagihan, activeBulan, activeTahun, userRole, addToast, settings } = useAppStore();
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
-  const [showBulanPicker, setShowBulanPicker] = useState(false);
 
-  // ── Subscribe realtime ──────────────────────────────────────────────────────
-  useEffect(() => {
-    setLoading(true);
-    const unsub = listenTagihan(activeBulan, activeTahun, (data) => {
-      setTagihan(data);
-      setLoading(false);
-    });
-    return unsub;
-  }, [activeBulan, activeTahun]);
+  const isAdmin = userRole?.role === "admin";
 
-  // ── Filter & search ─────────────────────────────────────────────────────────
   const filtered = tagihan.filter((t) => {
-    if (filter === "lunas" && t.status !== "lunas") return false;
-    if (filter === "belum" && t.status !== "belum") return false;
-    if (search.trim()) {
+    if (filter !== "semua" && t.status !== filter) return false;
+    if (search) {
       const q = search.toLowerCase();
-      return (
-        t.memberNama.toLowerCase().includes(q) ||
+      return t.memberNama.toLowerCase().includes(q) ||
         t.memberNomorSambungan.toLowerCase().includes(q) ||
-        t.memberDusun?.toLowerCase().includes(q) ||
-        t.memberRT?.toLowerCase().includes(q)
-      );
+        (t.memberDusun || "").toLowerCase().includes(q);
     }
     return true;
   });
 
-  // ── Stats ───────────────────────────────────────────────────────────────────
-  const totalTagihan = tagihan.length;
   const jumlahLunas = tagihan.filter((t) => t.status === "lunas").length;
   const jumlahBelum = tagihan.filter((t) => t.status === "belum").length;
-  const totalTerkumpul = tagihan
-    .filter((t) => t.status === "lunas")
-    .reduce((a, t) => a + t.total, 0);
+  const totalTerkumpul = tagihan.filter((t) => t.status === "lunas").reduce((s, t) => s + t.total, 0);
 
-  // ── Aksi tandai lunas/belum ─────────────────────────────────────────────────
-  const handleTandaiLunas = useCallback(
-    (t: Tagihan) => {
-      if (isLocked) {
-        addToast("error", "Aplikasi terkunci. Hubungi admin.");
-        return;
-      }
-      const newStatus = t.status === "lunas" ? "belum" : "lunas";
-      const label = newStatus === "lunas" ? "lunas" : "belum bayar";
-      showConfirm(
-        `Tandai ${label}?`,
-        `Tagihan ${t.memberNama} (${formatRp(t.total)}) akan ditandai ${label}.`,
-        async () => {
-          try {
-            await updateTagihanStatus(t.id!, newStatus);
-            await saveActivityLog(
-              "UPDATE_TAGIHAN_STATUS",
-              `${t.memberNama} — ${MONTHS[activeBulan - 1]} ${activeTahun} → ${label}`,
-              userRole?.email ?? "",
-              userRole?.role ?? ""
-            );
-            addToast("success", `Tagihan ditandai ${label}.`);
-          } catch {
-            addToast("error", "Gagal memperbarui status.");
-          }
-        }
-      );
-    },
-    [isLocked, activeBulan, activeTahun, userRole, showConfirm, addToast]
-  );
-
-  // ── Aksi hapus (admin) ──────────────────────────────────────────────────────
-  const handleHapus = useCallback(
-    (t: Tagihan) => {
-      if (isLocked) {
-        addToast("error", "Aplikasi terkunci. Hubungi admin.");
-        return;
-      }
-      showConfirm(
-        "Hapus tagihan?",
-        `Tagihan ${t.memberNama} (${formatRp(t.total)}) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.`,
-        async () => {
-          try {
-            await deleteTagihan(t.id!);
-            await saveActivityLog(
-              "DELETE_TAGIHAN",
-              `${t.memberNama} — ${MONTHS[activeBulan - 1]} ${activeTahun} (${t.nomorTagihan})`,
-              userRole?.email ?? "",
-              userRole?.role ?? ""
-            );
-            addToast("success", "Tagihan dihapus.");
-          } catch {
-            addToast("error", "Gagal menghapus tagihan.");
-          }
-        },
-        true // danger mode
-      );
-    },
-    [isLocked, activeBulan, activeTahun, userRole, showConfirm, addToast]
-  );
-
-  // ── Share WA ────────────────────────────────────────────────────────────────
-  const handleShare = useCallback(
-    async (t: Tagihan) => {
-      try {
-        await shareTagihan(t, settings);
-      } catch {
-        addToast("error", "Gagal membuka share.");
-      }
-    },
-    [settings, addToast]
-  );
-
-  // ── Download PDF ────────────────────────────────────────────────────────────
-  const handleDownload = useCallback(
-    async (t: Tagihan) => {
-      try {
-        addToast("info", "Membuat PDF...");
-        await downloadPdfTagihan(t, settings);
-        addToast("success", "PDF berhasil diunduh.");
-      } catch {
-        addToast("error", "Gagal membuat PDF.");
-      }
-    },
-    [settings, addToast]
-  );
-
-  // ── Navigasi bulan ──────────────────────────────────────────────────────────
-  const prevBulan = () => {
-    if (activeBulan === 1) {
-      setActiveBulanTahun(12, activeTahun - 1);
-    } else {
-      setActiveBulanTahun(activeBulan - 1, activeTahun);
-    }
+  const handleShare = async (t: Tagihan) => {
+    try { await shareTagihan(t, settings); }
+    catch { addToast("error", "Gagal share tagihan"); }
   };
 
-  const nextBulan = () => {
-    if (activeBulan === 12) {
-      setActiveBulanTahun(1, activeTahun + 1);
-    } else {
-      setActiveBulanTahun(activeBulan + 1, activeTahun);
-    }
+  const handleDownload = async (t: Tagihan) => {
+    try { await downloadPdfTagihan(t, settings); }
+    catch { addToast("error", "Gagal download PDF"); }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
+
   return (
-    <div className="pb-safe">
-      {/* ── Navigasi bulan ── */}
-      <div className="flex items-center justify-between mb-4 gap-2">
-        <button
-          onClick={prevBulan}
-          className="btn-ghost"
-          style={{ height: 44, width: 44, padding: 0 }}
-        >
-          <ChevronLeft size={20} />
-        </button>
-
-        <button
-          onClick={() => setShowBulanPicker(!showBulanPicker)}
-          className="card flex-1 flex items-center justify-center gap-2 font-bold text-sm"
-          style={{ height: 44, color: "var(--color-primary)" }}
-        >
-          <Droplets size={16} />
-          {MONTHS[activeBulan - 1]} {activeTahun}
-        </button>
-
-        <button
-          onClick={nextBulan}
-          className="btn-ghost"
-          style={{ height: 44, width: 44, padding: 0 }}
-        >
-          <ChevronRight size={20} />
-        </button>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Header info */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 0" }}>
+        <Droplets size={16} style={{ color: "var(--color-primary)" }} />
+        <span style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>{bulanLabel}</span>
       </div>
 
-      {/* ── Bulan picker dropdown ── */}
-      {showBulanPicker && (
-        <div className="card p-3 mb-4">
-          <div className="section-label mb-2">Pilih Bulan</div>
-          {/* Tahun */}
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {YEARS.map((y) => (
-              <button
-                key={y}
-                onClick={() => {
-                  setActiveBulanTahun(activeBulan, y);
-                }}
-                className={activeTahun === y ? "btn-primary" : "btn-secondary"}
-                style={{ height: 36, fontSize: 13, padding: "0 14px" }}
-              >
-                {y}
-              </button>
-            ))}
+      {/* Stat row */}
+      <div style={{ display: "flex", gap: 8 }}>
+        {[
+          { label: "Terkumpul", value: formatRp(totalTerkumpul), color: "var(--color-primary)" },
+          { label: "Lunas", value: `${jumlahLunas}/${tagihan.length}`, color: "var(--color-lunas)" },
+          { label: "Belum", value: String(jumlahBelum), color: "var(--color-belum)" },
+        ].map((s) => (
+          <div key={s.label} className="card" style={{ flex: 1, padding: "10px 8px", borderLeft: `3px solid ${s.color}` }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: s.color, fontFamily: "JetBrains Mono, monospace", lineHeight: 1 }}>{s.value}</div>
           </div>
-          {/* Bulan grid */}
-          <div className="grid grid-cols-4 gap-2">
-            {MONTHS.map((m, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  setActiveBulanTahun(i + 1, activeTahun);
-                  setShowBulanPicker(false);
-                }}
-                className={
-                  activeBulan === i + 1 ? "btn-primary" : "btn-secondary"
-                }
-                style={{ height: 36, fontSize: 12, padding: 0 }}
-              >
-                {m.slice(0, 3)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── Stat cards ── */}
-      <div className="flex gap-2 mb-4">
-        <StatMini
-          label="Terkumpul"
-          value={formatRp(totalTerkumpul)}
-          color="var(--color-primary)"
-        />
-        <StatMini
-          label="Lunas"
-          value={`${jumlahLunas}/${totalTagihan}`}
-          color="var(--color-lunas)"
-        />
-        <StatMini
-          label="Belum"
-          value={String(jumlahBelum)}
-          color="var(--color-belum)"
-        />
+        ))}
       </div>
 
-      {/* ── Search ── */}
-      <div className="relative mb-3">
-        <Search
-          size={16}
-          className="absolute left-3 top-1/2 -translate-y-1/2"
-          style={{ color: "var(--color-txt3)" }}
-        />
-        <input
-          className="input-field"
-          style={{ paddingLeft: 38 }}
-          placeholder="Cari nama, no. sambungan, dusun…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* Search */}
+      <div style={{ position: "relative" }}>
+        <Search size={15} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "var(--color-txt3)" }} />
+        <input className="input-field" style={{ paddingLeft: 36 }}
+          placeholder="Cari nama, nomor, dusun…"
+          value={search} onChange={(e) => setSearch(e.target.value)} />
         {search && (
-          <button
-            onClick={() => setSearch("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2"
-            style={{ color: "var(--color-txt3)" }}
-          >
-            <X size={16} />
+          <button onClick={() => setSearch("")} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--color-txt3)" }}>
+            <X size={15} />
           </button>
         )}
       </div>
 
-      {/* ── Filter tabs ── */}
-      <div className="flex gap-2 mb-4">
+      {/* Filter tabs */}
+      <div style={{ display: "flex", gap: 6 }}>
         {(["semua", "belum", "lunas"] as FilterStatus[]).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={filter === f ? "btn-primary" : "btn-secondary"}
-            style={{ height: 36, fontSize: 13, padding: "0 14px", flex: 1 }}
-          >
-            {f === "semua" && (
-              <>
-                <Filter size={13} /> Semua
-              </>
-            )}
-            {f === "belum" && (
-              <>
-                <Clock size={13} /> Belum
-              </>
-            )}
-            {f === "lunas" && (
-              <>
-                <CheckCircle2 size={13} /> Lunas
-              </>
-            )}
+          <button key={f} onClick={() => setFilter(f)}
+            style={{
+              flex: 1, height: 36, borderRadius: 8, fontSize: 12, fontWeight: 700,
+              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              background: filter === f ? "var(--color-primary)" : "var(--color-bg)",
+              color: filter === f ? "#fff" : "var(--color-txt3)",
+              outline: filter !== f ? "1px solid var(--color-border)" : "none",
+            }}>
+            {f === "semua" && <><Filter size={12} /> Semua</>}
+            {f === "belum" && <><Clock size={12} /> Belum</>}
+            {f === "lunas" && <><CheckCircle2 size={12} /> Lunas</>}
           </button>
         ))}
       </div>
 
-      {/* ── List ── */}
-      {loading ? (
-        <div className="flex flex-col items-center gap-3 py-12">
-          <div
-            className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-            style={{ borderColor: "var(--color-primary)" }}
-          />
-          <p style={{ color: "var(--color-txt3)", fontSize: 14 }}>
-            Memuat tagihan…
-          </p>
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12">
-          <Droplets size={36} style={{ color: "var(--color-txt3)" }} />
-          <p
-            className="text-center"
-            style={{ color: "var(--color-txt3)", fontSize: 14 }}
-          >
-            {tagihan.length === 0
-              ? `Belum ada tagihan untuk ${MONTHS[activeBulan - 1]} ${activeTahun}.`
-              : "Tidak ada tagihan yang sesuai filter."}
+      {/* Info jumlah */}
+      {(search || filter !== "semua") && (
+        <p style={{ fontSize: 12, color: "var(--color-txt3)" }}>
+          {filtered.length} dari {tagihan.length} tagihan
+        </p>
+      )}
+
+      {/* Hint tandai lunas */}
+      <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 12, color: "var(--color-primary)", fontWeight: 500 }}>
+        💡 Untuk tandai lunas/belum — gunakan menu <strong>Entry</strong>
+      </div>
+
+      {/* List */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "32px 0", color: "var(--color-txt3)" }}>
+          <Droplets size={32} style={{ margin: "0 auto 8px", opacity: 0.3 }} />
+          <p style={{ fontSize: 13 }}>
+            {tagihan.length === 0 ? `Belum ada tagihan untuk ${bulanLabel}.` : "Tidak ada yang sesuai filter."}
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          {/* Info jumlah hasil filter */}
-          {(search || filter !== "semua") && (
-            <p
-              className="text-xs"
-              style={{ color: "var(--color-txt3)" }}
-            >
-              Menampilkan {filtered.length} dari {tagihan.length} tagihan
-            </p>
-          )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map((t) => {
+            const lunas = t.status === "lunas";
+            const isIuranRata = t.meterAwal === 0 && t.meterAkhir === 0;
+            return (
+              <div key={t.id} className="card" style={{
+                padding: "12px 14px",
+                borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : "var(--color-belum)"}`,
+              }}>
+                {/* Nama + badge */}
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.memberNama}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-txt3)", marginTop: 1 }}>
+                      No. {t.memberNomorSambungan} · {t.memberDusun ? `${t.memberDusun} / ` : ""}RT {t.memberRT}
+                    </div>
+                  </div>
+                  <span className={lunas ? "badge-lunas" : "badge-belum"} style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 4, fontSize: 11, padding: "3px 8px", borderRadius: 20, fontWeight: 700,
+                    background: lunas ? "rgba(21,128,61,0.12)" : "rgba(185,28,28,0.1)",
+                    color: lunas ? "var(--color-lunas)" : "var(--color-belum)" }}>
+                    {lunas ? <CheckCircle2 size={11} /> : <Clock size={11} />}
+                    {lunas ? "Lunas" : "Belum"}
+                  </span>
+                </div>
 
-          {filtered.map((t) => (
-            <TagihanCard
-              key={t.id}
-              item={t}
-              isAdmin={isAdmin}
-              isLocked={isLocked}
-              onTandaiLunas={handleTandaiLunas}
-              onHapus={handleHapus}
-              onShare={handleShare}
-              onDownload={handleDownload}
-            />
-          ))}
+                {/* Detail */}
+                <div style={{ display: "flex", gap: 12, fontSize: 12, color: "var(--color-txt2)", marginBottom: 8, flexWrap: "wrap" }}>
+                  {isIuranRata ? (
+                    <span style={{ fontStyle: "italic", color: "var(--color-txt3)" }}>iuran rata</span>
+                  ) : (
+                    <>
+                      <span>Meter: <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{t.meterAwal} → {t.meterAkhir}</span></span>
+                      <span>Pakai: <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{formatM3(t.pemakaian)}</span></span>
+                    </>
+                  )}
+                </div>
+
+                {/* Nominal + tanggal */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontSize: 18, fontWeight: 900, color: "var(--color-primary)", fontFamily: "JetBrains Mono, monospace" }}>{formatRp(t.total)}</span>
+                  <div style={{ fontSize: 11, color: "var(--color-txt3)", textAlign: "right" }}>
+                    <div>Entry: {formatTanggal(t.tanggalEntry)}</div>
+                    {lunas && (t.tanggalBayar as boolean) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
+                  </div>
+                </div>
+
+                {/* Aksi — hanya share + download */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => handleShare(t)}
+                    style={{ flex: 1, height: 38, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 600 }}>
+                    <Share2 size={14} /> Bagikan WA
+                  </button>
+                  <button onClick={() => handleDownload(t)}
+                    style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-txt3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Download size={14} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
