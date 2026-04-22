@@ -1,0 +1,14 @@
+{
+  "globalLock": false,
+  "abonemen": 5000,
+  "hargaBlok1": 2000,
+  "batasBlok": 10,
+  "hargaBlok2": 3000,
+  "modeTunggakan": "mandiri",
+  "dusunList": [],
+  "rtPerDusun": {},
+  "namaOrganisasi": "PAM Desa",
+  "desa": "nama desa kamu",
+  "kecamatan": "nama kecamatan",
+  "versi": "1.0.0"
+}
