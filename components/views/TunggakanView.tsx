@@ -349,7 +349,7 @@ export default function TunggakanView() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="pb-safe">
+    <div>
       {/* ── Info periode ── */}
       <div
         className="card p-3 mb-4 flex items-center gap-3"

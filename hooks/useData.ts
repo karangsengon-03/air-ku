@@ -1,42 +1,30 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { listenMembers, listenTagihan } from "@/lib/db";
 import { useAppStore } from "@/store/useAppStore";
 
 /**
  * Global data provider — dipasang SEKALI di AppShell.
- * Listen members (semua status) dan tagihan bulan aktif.
- * Data disimpan ke Zustand store → semua view baca langsung dari store, instan.
+ * Members: listen semua, simpan ke store.
+ * Tagihan: listen bulan aktif, re-subscribe saat bulan/tahun berubah.
+ * Semua view baca dari store → tidak ada delay/loading per-halaman.
  */
 export function useData() {
-  const { activeBulan, activeTahun, setMembers, setTagihan } = useAppStore();
-  const unsubMembersRef = useRef<(() => void) | null>(null);
-  const unsubTagihanRef = useRef<(() => void) | null>(null);
+  const { activeBulan, activeTahun, setMembers, setTagihan, firebaseUser } = useAppStore();
 
-  // Listen members — sekali saja, tidak perlu re-subscribe saat bulan ganti
+  // Members — subscribe sekali saat login, unsubscribe saat logout
   useEffect(() => {
-    if (unsubMembersRef.current) unsubMembersRef.current();
-    const unsub = listenMembers((data) => {
-      setMembers(data);
-    });
-    unsubMembersRef.current = unsub;
-    return () => {
-      unsub();
-      unsubMembersRef.current = null;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // hanya satu kali mount
+    if (!firebaseUser) return;
+    const unsub = listenMembers((data) => setMembers(data));
+    return () => unsub();
+  }, [firebaseUser, setMembers]);
 
-  // Listen tagihan — re-subscribe saat bulan/tahun aktif berubah
+  // Tagihan — re-subscribe saat bulan/tahun aktif berubah
   useEffect(() => {
-    if (unsubTagihanRef.current) unsubTagihanRef.current();
-    const unsub = listenTagihan(activeBulan, activeTahun, (data) => {
-      setTagihan(data);
-    });
-    unsubTagihanRef.current = unsub;
-    return () => {
-      unsub();
-      unsubTagihanRef.current = null;
-    };
-  }, [activeBulan, activeTahun, setTagihan]);
+    if (!firebaseUser) return;
+    // Reset dulu ke kosong supaya UI tidak tampilkan data bulan lama
+    setTagihan([]);
+    const unsub = listenTagihan(activeBulan, activeTahun, (data) => setTagihan(data));
+    return () => unsub();
+  }, [firebaseUser, activeBulan, activeTahun, setTagihan]);
 }

@@ -258,25 +258,25 @@ export default function MembersView() {
   }, [form.dusun]);
 
   return (
-    <div className="pb-safe" style={{ padding: "0 16px 24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
       {/* ── Stat Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6, marginBottom: 4 }}>
         {[
           { label: "Total", value: stats.total, color: "var(--color-primary)" },
           { label: "Aktif", value: stats.aktif, color: "var(--color-lunas)" },
           { label: "Non-Aktif", value: stats.nonaktif, color: "var(--color-txt3)" },
           { label: "Pindah", value: stats.pindah, color: "var(--color-tunggakan)" },
         ].map((s) => (
-          <div key={s.label} className="card" style={{ padding: "10px 8px", textAlign: "center" }}>
-            <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 11, color: "var(--color-txt3)", marginTop: 2 }}>{s.label}</div>
+          <div key={s.label} className="card" style={{ padding: "10px 4px", textAlign: "center", minWidth: 0 }}>
+            <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: 10, color: "var(--color-txt3)", marginTop: 3, fontWeight: 600 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* ── Search + Filter + Tambah */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1, position: "relative" }}>
           <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-txt3)" }} />
           <input
@@ -452,7 +452,9 @@ export default function MembersView() {
           display: "flex", alignItems: "flex-end", justifyContent: "center",
         }}>
           <div className="card" style={{
-            width: "100%", maxWidth: 520, maxHeight: "90vh", overflowY: "auto",
+            width: "100%", maxWidth: 520,
+            maxHeight: "calc(100vh - 60px)",
+            overflowY: "auto",
             borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
             borderTopLeftRadius: 20, borderTopRightRadius: 20,
             padding: "20px 20px 32px",
@@ -626,10 +628,12 @@ export default function MembersView() {
           display: "flex", alignItems: "flex-end", justifyContent: "center",
         }}>
           <div className="card" style={{
-            width: "100%", maxWidth: 520, maxHeight: "88vh", overflowY: "auto",
+            width: "100%", maxWidth: 520,
+            maxHeight: "calc(100vh - 80px)",
+            overflowY: "auto",
             borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
             borderTopLeftRadius: 20, borderTopRightRadius: 20,
-            padding: "20px 20px 32px",
+            padding: "20px 20px 100px",
           }}>
             {/* Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>

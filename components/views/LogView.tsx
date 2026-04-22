@@ -128,7 +128,7 @@ export default function LogView() {
   const hasActiveFilter = filterAction !== "semua" || filterTanggal || search;
 
   return (
-    <div className="pb-safe" style={{ padding: "0 16px 24px" }}>
+    <div style={{ padding: "0 16px 24px" }}>
 
       {/* ── Summary */}
       <div className="card" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

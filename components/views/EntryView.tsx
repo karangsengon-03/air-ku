@@ -5,7 +5,7 @@ import {
   AlertCircle, RefreshCw, User, Zap, Gauge, Clock, Trash2,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { getLastMeter, saveTagihan, cekTagihanSudahAda, saveActivityLog, getLatestHargaHistoryId, updateTagihanStatus, deleteTagihan } from "@/lib/db";
+import { getLastMeter, saveTagihan, saveActivityLog, getLatestHargaHistoryId, updateTagihanStatus, deleteTagihan } from "@/lib/db";
 import { hitungTagihan, formatRp, formatM3, formatTanggal } from "@/lib/helpers";
 import { MONTHS, QUICKPAY_PRESETS } from "@/lib/constants";
 import { Member, Tagihan } from "@/types";
@@ -77,14 +77,13 @@ export default function EntryView() {
     setMeterAwal(""); setMeterAkhir(""); setCatatan("");
     setMeterAwalAuto(false); setSudahAda(null); setSavedResult(null);
     setQpPreset(null); setQpManual("");
+
+    // Cek sudah ada tagihan bulan ini dari store — INSTAN, tidak perlu Firestore call
+    const existing = tagihanBulanIni.find((t) => t.memberId === member.id);
+    setSudahAda(existing ?? null);
     setStep(2);
 
-    // Cek sudah ada tagihan bulan ini (dari store — instant)
-    const existing = tagihanBulanIni.find((t) => t.memberId === member.id);
-    if (existing) {
-      setSudahAda(existing);
-      return;
-    }
+    if (existing) return; // sudah ada, tampilkan tombol tandai lunas saja
 
     if (entryMode === "meter") {
       setLoadingMeter(true);

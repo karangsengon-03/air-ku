@@ -16,13 +16,12 @@ import Confirm from "@/components/ui/Confirm";
 export default function AppShell({ children }: { children: React.ReactNode }) {
   useAuth();
   useSettings();
-  useData(); // ← global listener: members + tagihan → store
+  useData();
 
-  const { authLoading, firebaseUser, darkMode, setIsOnline } = useAppStore();
+  const { authLoading, firebaseUser, setIsOnline } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Init dark mode dari localStorage
   useEffect(() => {
     const saved = localStorage.getItem("airku-dark");
     if (saved === "1") {
@@ -31,7 +30,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Online/offline
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
@@ -44,7 +42,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [setIsOnline]);
 
-  // Auth guard
   useEffect(() => {
     if (!authLoading && !firebaseUser) {
       router.replace("/login");
@@ -58,10 +55,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const title = PAGE_TITLES[segment] || "AirKu";
 
   return (
-    <div style={{ minHeight: "100svh", background: "var(--color-bg)" }}>
+    <div style={{ minHeight: "100svh", background: "var(--color-bg)", display: "flex", flexDirection: "column" }}>
       <LockBanner />
       <Header title={title} />
-      <main style={{ padding: "12px 12px 100px" }}>
+      {/* main scrollable, padding bawah 80px agar tidak tertutup bottom nav */}
+      <main style={{
+        flex: 1,
+        overflowY: "auto",
+        padding: "12px 12px 80px",
+        WebkitOverflowScrolling: "touch",
+      }}>
         {children}
       </main>
       <BottomNav />

@@ -134,10 +134,10 @@ export default function DashboardView() {
         </button>
       )}
 
-      {tagihan.length === 0 && (
-        <div style={{ textAlign: "center", padding: "24px 0", color: "var(--color-txt3)" }}>
-          <Droplets size={36} style={{ margin: "0 auto 8px", opacity: 0.3 }} />
-          <p style={{ fontSize: 13 }}>Belum ada tagihan untuk {bulanLabel}</p>
+      {/* Hint entry jika ada member tapi belum ada tagihan bulan ini */}
+      {tagihan.length === 0 && membersAktif.length > 0 && isCurrentMonth && (
+        <div style={{ textAlign: "center", padding: "16px 0", color: "var(--color-txt3)" }}>
+          <p style={{ fontSize: 13 }}>Belum ada iuran tercatat untuk {bulanLabel}</p>
         </div>
       )}
     </div>

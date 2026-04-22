@@ -108,7 +108,7 @@ export default function OperasionalView() {
   }
 
   return (
-    <div className="pb-safe" style={{ padding: "0 16px 24px" }}>
+    <div style={{ padding: "0 16px 24px" }}>
 
       {/* ── Bulan Picker */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

@@ -152,7 +152,7 @@ export default function RekapView() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="pb-safe">
+    <div>
       {/* ── Navigasi bulan ── */}
       <div className="flex items-center gap-2 mb-4">
         <button

@@ -239,7 +239,7 @@ export default function GrafikView() {
   }
 
   return (
-    <div className="pb-safe">
+    <div>
       {/* ── Navigasi tahun ── */}
       <div className="flex items-center gap-2 mb-5">
         <button
