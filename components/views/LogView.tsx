@@ -1,32 +1,52 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { ScrollText, Search, X, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import {
+  ScrollText, Search, X, ChevronDown, ChevronUp, RefreshCw,
+  UserPlus, UserMinus, Pencil, ClipboardList, CheckCircle2,
+  Trash2, Banknote, Settings, Lock, Unlock, FileText,
+  ClipboardCheck, Trash,
+} from "lucide-react";
+import type { LucideProps } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { listenActivityLog, pruneOldActivityLogs } from "@/lib/db";
 import { formatTanggalPanjang } from "@/lib/helpers";
 import { ActivityLog } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
+// Map icon name string → Lucide component
+const ICON_MAP: Record<string, React.FC<LucideProps>> = {
+  UserPlus, UserMinus, Pencil, ClipboardList, CheckCircle2,
+  Trash2, Banknote, Settings, Lock, Unlock, FileText,
+  ClipboardCheck, Trash,
+};
+
+function ActionIcon({ name, color }: { name: string; color: string }) {
+  const Icon = ICON_MAP[name] ?? FileText;
+  return <Icon size={16} style={{ color, flexShrink: 0 }} />;
+}
+
 // ── Label & icon mapping per aksi
-const ACTION_META: Record<string, { label: string; emoji: string; color: string }> = {
-  tambah_member: { label: "Tambah Pelanggan", emoji: "👤", color: "var(--color-lunas)" },
-  edit_member: { label: "Edit Pelanggan", emoji: "✏️", color: "var(--color-primary)" },
-  hapus_member: { label: "Hapus Pelanggan", emoji: "🗑️", color: "var(--color-belum)" },
-  entry_meter: { label: "Entry Meter", emoji: "📋", color: "var(--color-primary)" },
-  lunas: { label: "Tandai Lunas", emoji: "✅", color: "var(--color-lunas)" },
+const ACTION_META: Record<string, { label: string; icon: string; color: string }> = {
+  tambah_member: { label: "Tambah Pelanggan", icon: "UserPlus", color: "var(--color-lunas)" },
+  edit_member: { label: "Edit Pelanggan", icon: "Pencil", color: "var(--color-primary)" },
+  hapus_member: { label: "Hapus Pelanggan", icon: "UserMinus", color: "var(--color-belum)" },
+  entry_meter: { label: "Entry Meter", icon: "ClipboardList", color: "var(--color-primary)" },
+  lunas: { label: "Tandai Lunas", icon: "CheckCircle2", color: "var(--color-lunas)" },
   batal_lunas: { label: "Batal Lunas", emoji: "↩️", color: "var(--color-tunggakan)" },
-  hapus_tagihan: { label: "Hapus Tagihan", emoji: "🗑️", color: "var(--color-belum)" },
-  tambah_operasional: { label: "Catat Pengeluaran", emoji: "💸", color: "var(--color-tunggakan)" },
-  hapus_operasional: { label: "Hapus Pengeluaran", emoji: "🗑️", color: "var(--color-belum)" },
-  update_harga: { label: "Update Tarif", emoji: "⚙️", color: "var(--color-primary)" },
-  update_settings: { label: "Update Pengaturan", emoji: "⚙️", color: "var(--color-primary)" },
-  global_lock: { label: "Global Lock", emoji: "🔒", color: "var(--color-belum)" },
-  global_unlock: { label: "Global Unlock", emoji: "🔓", color: "var(--color-lunas)" },
+  hapus_tagihan: { label: "Hapus Tagihan", icon: "Trash2", color: "var(--color-belum)" },
+  tambah_operasional: { label: "Catat Pengeluaran", icon: "Banknote", color: "var(--color-tunggakan)" },
+  hapus_operasional: { label: "Hapus Pengeluaran", icon: "Trash2", color: "var(--color-belum)" },
+  update_harga: { label: "Update Tarif", icon: "Settings", color: "var(--color-primary)" },
+  update_settings: { label: "Update Pengaturan", icon: "Settings", color: "var(--color-primary)" },
+  global_lock: { label: "Global Lock", icon: "Lock", color: "var(--color-belum)" },
+  global_unlock: { label: "Global Unlock", icon: "Unlock", color: "var(--color-lunas)" },
+  entry_bayar: { label: "Entry Bayar", icon: "ClipboardCheck", color: "var(--color-lunas)" },
+  hapus_entry: { label: "Hapus Entry", icon: "Trash2", color: "var(--color-belum)" },
 };
 
 function getActionMeta(action: string) {
-  return ACTION_META[action] || { label: action, emoji: "📝", color: "var(--color-txt3)" };
+  return ACTION_META[action] || { label: action, icon: "FileText", color: "var(--color-txt3)" };
 }
 
 function formatTimestamp(ts: unknown): string {
@@ -144,7 +164,7 @@ export default function LogView() {
             {logs.length} aktivitas
           </div>
           <div style={{ fontSize: 11, color: "var(--color-txt3)", marginTop: 2 }}>
-            🗑️ Auto-hapus setelah 30 hari
+            Auto-hapus setelah 30 hari
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -266,7 +286,7 @@ export default function LogView() {
                 }}
               >
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                  <span style={{ fontSize: 18, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>{meta.emoji}</span>
+                  <ActionIcon name={meta.icon} color={meta.color} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
                       <span style={{ fontWeight: 700, fontSize: 14, color: meta.color }}>{meta.label}</span>

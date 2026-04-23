@@ -154,7 +154,7 @@ export default function RekapView() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* ── Navigasi bulan ── */}
       <div className="flex items-center gap-2 mb-4">
         <button
@@ -185,7 +185,7 @@ export default function RekapView() {
 
       {/* ── Bulan picker ── */}
       {showBulanPicker && (
-        <div className="card p-3 mb-4">
+        <div className="card" style={{ padding: "14px 14px" }}>
           <div className="section-label mb-2">Pilih Bulan</div>
           <div className="flex gap-2 mb-3 flex-wrap">
             {YEARS.map((y) => (
@@ -219,7 +219,7 @@ export default function RekapView() {
 
       {/* ── Filter dusun & RT ── */}
       {dusunList.length > 0 && (
-        <div className="card p-3 mb-4">
+        <div className="card" style={{ padding: "14px 14px" }}>
           <div className="flex items-center gap-2 mb-2">
             <Filter size={14} style={{ color: "var(--color-txt3)" }} />
             <span className="section-label" style={{ marginBottom: 0 }}>
@@ -563,7 +563,7 @@ export default function RekapView() {
                       color: "var(--color-txt3)",
                     }}
                   >
-                    {jumlahLunas}✓ {jumlahBelum}✗
+                    {jumlahLunas} Lunas / {jumlahBelum} Belum
                   </td>
                 </tr>
               </tfoot>

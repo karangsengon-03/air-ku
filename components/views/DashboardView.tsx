@@ -92,7 +92,7 @@ export default function DashboardView() {
         {
           icon: <Clock size={18} />, color: "var(--color-belum)",
           label: "Belum Bayar", value: `${belum.length} pelanggan`,
-          sub: belum.length > 0 ? `Rp ${belum.reduce((s, t) => s + t.total, 0).toLocaleString("id-ID")} belum terkumpul` : "Semua sudah lunas 🎉",
+          sub: belum.length > 0 ? `Rp ${belum.reduce((s, t) => s + t.total, 0).toLocaleString("id-ID")} belum terkumpul` : "Semua sudah lunas",
         },
         {
           icon: <Droplets size={18} />, color: "var(--color-accent)",

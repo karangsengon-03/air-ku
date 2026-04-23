@@ -716,7 +716,7 @@ function AccountsSection() {
           border: "1px solid rgba(3,105,161,0.2)",
         }}>
           <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-primary)", marginBottom: 6 }}>
-            📌 Cara Menambah Akun
+            Cara Menambah Akun
           </div>
           <div style={{ fontSize: 12, color: "var(--color-txt2)", lineHeight: 1.7 }}>
             Tambah akun dilakukan manual di <strong>Firebase Console</strong>:
@@ -898,7 +898,7 @@ function BackupSection({ addToast, showConfirm }: {
           marginTop: 12, padding: 10, borderRadius: 8,
           background: "rgba(185,28,28,0.06)", border: "1px solid rgba(185,28,28,0.15)",
         }}>
-          <div style={{ fontSize: 12, color: "var(--color-belum)", fontWeight: 700, marginBottom: 4 }}>⚠️ Perhatian</div>
+          <div style={{ fontSize: 12, color: "var(--color-belum)", fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 4 }}><span>Perhatian</span></div>
           <div style={{ fontSize: 12, color: "var(--color-txt3)", lineHeight: 1.6 }}>
             Import tidak menghapus data yang ada terlebih dahulu. Dokumen dengan ID yang sama akan ditimpa.
             Lakukan backup sebelum import untuk keamanan.
@@ -934,7 +934,7 @@ function InfoAppSection() {
           </div>
         ))}
         <div style={{ marginTop: 16, textAlign: "center" }}>
-          <div style={{ fontSize: 28, marginBottom: 6 }}>💧</div>
+          
           <div style={{ fontSize: 13, color: "var(--color-txt3)" }}>
             {APP_NAME} — Sistem Iuran Air Desa
           </div>

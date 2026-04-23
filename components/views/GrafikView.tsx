@@ -239,7 +239,7 @@ export default function GrafikView() {
   }
 
   return (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
       {/* ── Navigasi tahun ── */}
       <div className="flex items-center gap-2 mb-5">
         <button
@@ -275,7 +275,7 @@ export default function GrafikView() {
       ) : (
         <>
           {/* ── 1. Tren pemakaian m³ ── */}
-          <div className="card mb-4" style={{ padding: "16px 14px" }}>
+          <div className="card" style={{ padding: "18px 16px" }}>
             <SectionHeader
               icon={<Droplets size={16} />}
               title={`Tren Pemakaian Air ${selectedTahun}`}
@@ -313,7 +313,7 @@ export default function GrafikView() {
           </div>
 
           {/* ── 2. Tren pendapatan ── */}
-          <div className="card mb-4" style={{ padding: "16px 14px" }}>
+          <div className="card" style={{ padding: "18px 16px" }}>
             <SectionHeader
               icon={<BarChart2 size={16} />}
               title={`Tren Pendapatan ${selectedTahun}`}
@@ -369,7 +369,7 @@ export default function GrafikView() {
 
           {/* ── 3. Komparasi dusun (bulan aktif) ── */}
           {dusunData.length > 1 && (
-            <div className="card mb-4" style={{ padding: "16px 14px" }}>
+            <div className="card" style={{ padding: "18px 16px" }}>
               <SectionHeader
                 icon={<BarChart2 size={16} />}
                 title={`Pemakaian per Dusun — ${MONTHS[activeBulan - 1]} ${selectedTahun}`}
@@ -411,7 +411,7 @@ export default function GrafikView() {
 
           {/* ── 4. Top 5 pemakaian tertinggi ── */}
           {topPelanggan.length > 0 && (
-            <div className="card mb-4" style={{ padding: "16px 14px" }}>
+            <div className="card" style={{ padding: "18px 16px" }}>
               <SectionHeader
                 icon={<Trophy size={16} />}
                 title={`Top Pemakaian — ${MONTHS[activeBulan - 1]} ${selectedTahun}`}
@@ -420,11 +420,12 @@ export default function GrafikView() {
                 {topPelanggan.map((p, idx) => {
                   const maxM3 = topPelanggan[0].pemakaian || 1;
                   const pct = (p.pemakaian / maxM3) * 100;
-                  const medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"];
+                  const RANK_COLORS = ["#F59E0B", "#9CA3AF", "#B45309", "#6B7280", "#6B7280"];
+const RANK_BG = ["rgba(245,158,11,0.12)", "rgba(156,163,175,0.12)", "rgba(180,83,9,0.12)", "rgba(107,114,128,0.1)", "rgba(107,114,128,0.1)"];
                   return (
                     <div key={p.nomorSambungan} className="flex items-center gap-3">
                       <span style={{ fontSize: 18, width: 24, textAlign: "center" }}>
-                        {medals[idx]}
+                        {idx + 1}
                       </span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div

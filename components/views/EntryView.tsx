@@ -143,7 +143,7 @@ export default function EntryView() {
           await saveActivityLog("entry_bayar",
             `${isQp ? "Iuran rata" : "Meter"} ${selectedMember.nama} — ${MONTHS[activeBulan - 1]} ${activeTahun} — ${nominalLabel} [LUNAS]`,
             userRole?.email ?? "", userRole?.role ?? "");
-          addToast("success", `✓ ${selectedMember.nama} — Entry bayar berhasil!`);
+          addToast("success", `${selectedMember.nama} — Entry bayar berhasil!`);
           setSavedResult({ nama: selectedMember.nama, total: totalFinal });
           setStep(3);
         } catch (err) {
@@ -188,7 +188,7 @@ export default function EntryView() {
         background: "rgba(3,105,161,0.07)", border: "1px solid rgba(3,105,161,0.2)",
         borderRadius: 10, padding: "10px 14px", fontSize: 12, color: "var(--color-txt2)", lineHeight: 1.6,
       }}>
-        <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>💡 Cara kerja:</span>{" "}
+        <span style={{ fontWeight: 700, color: "var(--color-primary)" }}>Cara kerja:</span>{" "}
         Pilih pelanggan → Input nominal → Simpan. Entry bayar otomatis tercatat <strong>Lunas</strong>.
         Belum entry = Belum Bayar. Tidak perlu langkah tambahan.
       </div>
@@ -196,8 +196,8 @@ export default function EntryView() {
       {/* Entry mode toggle */}
       <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1px solid var(--color-border)" }}>
         {([
-          { key: "quickpay", label: "⚡ Iuran Rata", icon: Zap },
-          { key: "meter", label: "🔢 Meter Air", icon: Gauge },
+          { key: "quickpay", label: "Iuran Rata", icon: Zap },
+          { key: "meter", label: "Meter Air", icon: Gauge },
         ] as { key: EntryMode; label: string; icon: typeof Zap }[]).map((m) => (
           <button key={m.key} onClick={() => { setEntryMode(m.key); handleReset(); }}
             style={{
@@ -251,7 +251,7 @@ export default function EntryView() {
                       background: isLunas ? "rgba(21,128,61,0.12)" : "rgba(185,28,28,0.1)",
                       color: isLunas ? "var(--color-lunas)" : "var(--color-belum)",
                     }}>
-                      {isLunas ? "✓ Lunas" : "Belum"}
+                      {isLunas ? "Lunas" : "Belum"}
                     </span>
                   )}
                   <ChevronRight size={16} style={{ color: "var(--color-txt3)" }} />
@@ -314,13 +314,13 @@ export default function EntryView() {
               {/* QuickPay */}
               {entryMode === "quickpay" && (
                 <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>⚡ Iuran Rata — {bulanLabel}</p>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>Iuran Rata — {bulanLabel}</p>
 
                   <div style={{
                     background: "rgba(21,128,61,0.06)", border: "1px solid rgba(21,128,61,0.2)",
                     borderRadius: 8, padding: "8px 12px", fontSize: 12, color: "var(--color-txt2)",
                   }}>
-                    💡 Ketik <strong>0</strong> untuk pelanggan baru yang belum bayar di bulan ini
+                    Ketik <strong>0</strong> untuk pelanggan baru yang belum bayar di bulan ini
                   </div>
 
                   <div>
@@ -375,7 +375,7 @@ export default function EntryView() {
               {/* Meter */}
               {entryMode === "meter" && (
                 <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>🔢 Meter Air — {bulanLabel}</p>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>Meter Air — {bulanLabel}</p>
                   <div>
                     <label style={{ fontSize: 12, fontWeight: 700, color: "var(--color-txt3)", display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                       METER AWAL (m³)
@@ -452,7 +452,7 @@ export default function EntryView() {
               <p style={{ fontSize: 24, fontWeight: 900, color: "var(--color-lunas)", fontFamily: "monospace", marginTop: 2 }}>
                 {savedResult.total === 0 ? "Rp 0 (Pelanggan Baru)" : formatRp(savedResult.total)}
               </p>
-              <p style={{ fontSize: 11, color: "var(--color-lunas)", marginTop: 6, fontWeight: 700 }}>✓ Status: LUNAS</p>
+              <p style={{ fontSize: 11, color: "var(--color-lunas)", marginTop: 6, fontWeight: 700 }}>Status: LUNAS</p>
             </div>
           </div>
           <button className="btn-primary" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} onClick={handleReset}>

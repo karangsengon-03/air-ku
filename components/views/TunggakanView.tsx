@@ -334,7 +334,7 @@ export default function TunggakanView() {
   const handleShareKolektif = useCallback(() => {
     const baris = [
       `*${settings.namaOrganisasi || "PAM Desa"}*`,
-      `⚠️ *Daftar Tunggakan Air*`,
+      `*Daftar Tunggakan Air*`,
       `Per ${MONTHS[activeBulan - 1]} ${activeTahun}`,
       ``,
       ...groups.map(
@@ -439,7 +439,7 @@ export default function TunggakanView() {
             className="text-center font-semibold"
             style={{ color: "var(--color-lunas)", fontSize: 15 }}
           >
-            Tidak ada tunggakan! 🎉
+            Tidak ada tunggakan!
           </p>
           <p
             className="text-center text-sm"

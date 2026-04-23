@@ -3,7 +3,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home, ClipboardList, Droplets, Users, Settings,
-  AlertTriangle, BarChart2, FolderOpen, Grid3x3,
+  FolderOpen, TrendingUp, AlertTriangle, Wrench, ScrollText,
+  Grid3x3,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useState, useEffect } from "react";
@@ -17,11 +18,11 @@ const adminNav = [
 ];
 
 const adminMoreNav = [
-  { href: "/rekap", emoji: "📁", label: "Rekap" },
-  { href: "/grafik", emoji: "📈", label: "Grafik" },
-  { href: "/tunggakan", emoji: "⚠️", label: "Tunggakan" },
-  { href: "/operasional", emoji: "🔧", label: "Operasional" },
-  { href: "/log", emoji: "📜", label: "Log Aktivitas" },
+  { href: "/rekap", icon: FolderOpen, label: "Rekap" },
+  { href: "/grafik", icon: TrendingUp, label: "Grafik" },
+  { href: "/tunggakan", icon: AlertTriangle, label: "Tunggakan" },
+  { href: "/operasional", icon: Wrench, label: "Operasional" },
+  { href: "/log", icon: ScrollText, label: "Log Aktivitas" },
 ];
 
 const penagihNav = [
@@ -29,7 +30,7 @@ const penagihNav = [
   { href: "/entry", icon: ClipboardList, label: "Entry" },
   { href: "/tagihan", icon: Droplets, label: "Tagihan" },
   { href: "/tunggakan", icon: AlertTriangle, label: "Tunggakan" },
-  { href: "/grafik", icon: BarChart2, label: "Grafik" },
+  { href: "/grafik", icon: TrendingUp, label: "Grafik" },
 ];
 
 export default function BottomNav() {
@@ -38,26 +39,20 @@ export default function BottomNav() {
   const [showMore, setShowMore] = useState(false);
   const isAdmin = userRole?.role === "admin";
   const navItems = isAdmin ? adminNav : penagihNav;
-
   const activeInMore = isAdmin && adminMoreNav.some((m) => pathname === m.href);
 
-  // Auto-collapse saat pathname berubah (pindah halaman)
   useEffect(() => {
     setShowMore(false);
   }, [pathname]);
 
   return (
     <>
-      {/* More menu overlay */}
       {showMore && isAdmin && (
         <>
-          {/* Backdrop — klik luar = tutup */}
           <div
             style={{ position: "fixed", inset: 0, zIndex: 99 }}
             onClick={() => setShowMore(false)}
           />
-
-          {/* Menu card */}
           <div style={{
             position: "fixed",
             bottom: "calc(var(--nav-height) + 10px)",
@@ -77,7 +72,7 @@ export default function BottomNav() {
               Menu Lainnya
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-              {adminMoreNav.map(({ href, label, emoji }) => {
+              {adminMoreNav.map(({ href, label, icon: Icon }) => {
                 const active = pathname === href;
                 return (
                   <Link
@@ -94,7 +89,7 @@ export default function BottomNav() {
                       gap: 6,
                     }}
                   >
-                    <span style={{ fontSize: 22, lineHeight: 1 }}>{emoji}</span>
+                    <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
                     <span style={{ lineHeight: 1.3 }}>{label}</span>
                   </Link>
                 );
@@ -117,23 +112,17 @@ export default function BottomNav() {
         {navItems.map(({ href, icon: Icon, label }) => {
           const active = pathname === href;
           return (
-            <Link
-              key={href}
-              href={href}
-              style={{
-                flex: 1, display: "flex", flexDirection: "column",
-                alignItems: "center", justifyContent: "center",
-                gap: 2, color: active ? "var(--color-primary)" : "var(--color-txt3)",
-                textDecoration: "none",
-              }}
-            >
+            <Link key={href} href={href} style={{
+              flex: 1, display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center",
+              gap: 2, color: active ? "var(--color-primary)" : "var(--color-txt3)",
+              textDecoration: "none",
+            }}>
               <Icon size={21} strokeWidth={active ? 2.5 : 1.8} />
               <span style={{ fontSize: 10, fontWeight: active ? 700 : 500 }}>{label}</span>
             </Link>
           );
         })}
-
-        {/* Tombol Lainnya — admin only */}
         {isAdmin && (
           <button
             onClick={() => setShowMore((prev) => !prev)}
