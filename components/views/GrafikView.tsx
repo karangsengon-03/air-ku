@@ -275,7 +275,7 @@ export default function GrafikView() {
       ) : (
         <>
           {/* ── 1. Tren pemakaian m³ ── */}
-          <div className="card p-4 mb-4">
+          <div className="card mb-4" style={{ padding: "16px 14px" }}>
             <SectionHeader
               icon={<Droplets size={16} />}
               title={`Tren Pemakaian Air ${selectedTahun}`}
@@ -313,7 +313,7 @@ export default function GrafikView() {
           </div>
 
           {/* ── 2. Tren pendapatan ── */}
-          <div className="card p-4 mb-4">
+          <div className="card mb-4" style={{ padding: "16px 14px" }}>
             <SectionHeader
               icon={<BarChart2 size={16} />}
               title={`Tren Pendapatan ${selectedTahun}`}
@@ -369,7 +369,7 @@ export default function GrafikView() {
 
           {/* ── 3. Komparasi dusun (bulan aktif) ── */}
           {dusunData.length > 1 && (
-            <div className="card p-4 mb-4">
+            <div className="card mb-4" style={{ padding: "16px 14px" }}>
               <SectionHeader
                 icon={<BarChart2 size={16} />}
                 title={`Pemakaian per Dusun — ${MONTHS[activeBulan - 1]} ${selectedTahun}`}
@@ -411,7 +411,7 @@ export default function GrafikView() {
 
           {/* ── 4. Top 5 pemakaian tertinggi ── */}
           {topPelanggan.length > 0 && (
-            <div className="card p-4 mb-4">
+            <div className="card mb-4" style={{ padding: "16px 14px" }}>
               <SectionHeader
                 icon={<Trophy size={16} />}
                 title={`Top Pemakaian — ${MONTHS[activeBulan - 1]} ${selectedTahun}`}

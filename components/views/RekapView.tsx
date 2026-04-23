@@ -406,7 +406,7 @@ export default function RekapView() {
                     <th
                       key={col.label}
                       style={{
-                        padding: "10px 12px",
+                        padding: "13px 10px",
                         textAlign: col.align,
                         fontWeight: 700,
                         fontSize: 11,
@@ -435,7 +435,7 @@ export default function RekapView() {
                   >
                     <td
                       style={{
-                        padding: "10px 12px",
+                        padding: "13px 10px",
                         textAlign: "center",
                         color: "var(--color-txt3)",
                         fontSize: 12,
@@ -443,7 +443,7 @@ export default function RekapView() {
                     >
                       {idx + 1}
                     </td>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td style={{ padding: "13px 10px" }}>
                       <div
                         className="font-semibold"
                         style={{ color: "var(--color-txt)" }}
@@ -459,7 +459,7 @@ export default function RekapView() {
                     </td>
                     <td
                       style={{
-                        padding: "10px 12px",
+                        padding: "13px 10px",
                         color: "var(--color-txt2)",
                         fontSize: 12,
                       }}
@@ -468,7 +468,7 @@ export default function RekapView() {
                     </td>
                     <td
                       style={{
-                        padding: "10px 12px",
+                        padding: "13px 10px",
                         textAlign: "right",
                         fontFamily: "JetBrains Mono, monospace",
                         color: "var(--color-txt2)",
@@ -478,7 +478,7 @@ export default function RekapView() {
                     </td>
                     <td
                       style={{
-                        padding: "10px 12px",
+                        padding: "13px 10px",
                         textAlign: "right",
                         fontFamily: "JetBrains Mono, monospace",
                         fontWeight: 600,
@@ -487,7 +487,7 @@ export default function RekapView() {
                     >
                       {formatRp(row.total)}
                     </td>
-                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                    <td style={{ padding: "13px 10px", textAlign: "center" }}>
                       <span
                         className={
                           row.status === "lunas" ? "badge-lunas" : "badge-belum"
@@ -516,7 +516,7 @@ export default function RekapView() {
                   <td
                     colSpan={3}
                     style={{
-                      padding: "10px 12px",
+                      padding: "13px 10px",
                       fontWeight: 700,
                       fontSize: 12,
                       color: "var(--color-txt2)",
@@ -526,7 +526,7 @@ export default function RekapView() {
                   </td>
                   <td
                     style={{
-                      padding: "10px 12px",
+                      padding: "13px 10px",
                       textAlign: "right",
                       fontFamily: "JetBrains Mono, monospace",
                       fontWeight: 700,
@@ -537,7 +537,7 @@ export default function RekapView() {
                   </td>
                   <td
                     style={{
-                      padding: "10px 12px",
+                      padding: "13px 10px",
                       textAlign: "right",
                       fontFamily: "JetBrains Mono, monospace",
                       fontWeight: 700,
@@ -557,7 +557,7 @@ export default function RekapView() {
                   </td>
                   <td
                     style={{
-                      padding: "10px 12px",
+                      padding: "13px 10px",
                       textAlign: "center",
                       fontSize: 12,
                       color: "var(--color-txt3)",

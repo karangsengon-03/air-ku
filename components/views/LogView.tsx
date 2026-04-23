@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { ScrollText, Search, X, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { listenActivityLog } from "@/lib/db";
+import { listenActivityLog, pruneOldActivityLogs } from "@/lib/db";
 import { formatTanggalPanjang } from "@/lib/helpers";
 import { ActivityLog } from "@/types";
 import { Timestamp } from "firebase/firestore";
@@ -67,9 +67,15 @@ function getDateString(ts: unknown): string {
 }
 
 export default function LogView() {
-  const { firebaseUser } = useAppStore();
+  const { firebaseUser, userRole } = useAppStore();
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ── Auto-hapus log > 30 hari saat mount (admin only, silent)
+  useEffect(() => {
+    if (userRole?.role !== "admin") return;
+    pruneOldActivityLogs().catch(() => {});
+  }, [userRole]);
 
   // ── Filter state
   const [search, setSearch] = useState("");
@@ -77,13 +83,13 @@ export default function LogView() {
   const [filterTanggal, setFilterTanggal] = useState("");
   const [showFilter, setShowFilter] = useState(false);
 
-  // ── Listener (100 log terbaru)
+  // ── Listener (500 log terbaru — retensi 30 hari via pruneOldActivityLogs)
   useEffect(() => {
     setLoading(true);
     const unsub = listenActivityLog((data) => {
       setLogs(data);
       setLoading(false);
-    }, 100);
+    }, 500);
     return unsub;
   }, []);
 
@@ -136,6 +142,9 @@ export default function LogView() {
           <div className="section-label">Log Tersimpan</div>
           <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--color-primary)" }}>
             {logs.length} aktivitas
+          </div>
+          <div style={{ fontSize: 11, color: "var(--color-txt3)", marginTop: 2 }}>
+            🗑️ Auto-hapus setelah 30 hari
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -291,9 +300,9 @@ export default function LogView() {
             );
           })}
 
-          {logs.length >= 100 && (
+          {logs.length >= 500 && (
             <div style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, color: "var(--color-txt3)", borderTop: "1px solid var(--color-border)" }}>
-              Menampilkan 100 log terbaru. Log lama otomatis terhapus.
+              Menampilkan 500 log terbaru. Log otomatis terhapus setelah 30 hari.
             </div>
           )}
         </div>

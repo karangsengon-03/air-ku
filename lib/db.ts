@@ -403,6 +403,30 @@ export async function getTagihanByMember(memberId: string): Promise<Tagihan[]> {
 
 // ─── Activity Log listener ────────────────────────────────────────────────────
 
+// ─── Prune log lebih dari 30 hari ────────────────────────────────────────────
+export async function pruneOldActivityLogs(): Promise<number> {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffTs = Timestamp.fromDate(cutoff);
+
+  const q = query(
+    collection(db, "activityLog"),
+    where("ts", "<", cutoffTs)
+  );
+  const snap = await getDocs(q);
+  if (snap.empty) return 0;
+
+  // Hapus batch (max 500 per batch Firestore)
+  const BATCH_SIZE = 400;
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+    const batch = writeBatch(db);
+    docs.slice(i, i + BATCH_SIZE).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return docs.length;
+}
+
 export function listenActivityLog(
   callback: (logs: ActivityLog[]) => void,
   maxEntries = 100

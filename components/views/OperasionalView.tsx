@@ -212,16 +212,24 @@ export default function OperasionalView() {
 
       {/* ── Modal Form */}
       {showForm && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 50,
-          display: "flex", alignItems: "flex-end", justifyContent: "center",
-        }}>
-          <div className="card" style={{
-            width: "100%", maxWidth: 520,
-            borderBottomLeftRadius: 0, borderBottomRightRadius: 0,
-            borderTopLeftRadius: 20, borderTopRightRadius: 20,
-            padding: "20px 20px 32px",
-          }}>
+        <div
+          onClick={() => { setShowForm(false); setFormError(""); }}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 50,
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            overflowY: "auto",
+            padding: "40px 16px 40px",
+          }}
+        >
+          <div
+            className="card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 520,
+              borderRadius: 20,
+              padding: "20px 20px 28px",
+            }}
+          >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
               <div style={{ fontWeight: 800, fontSize: 17 }}>Catat Pengeluaran</div>
               <button className="btn-ghost" style={{ padding: 8 }} onClick={() => { setShowForm(false); setFormError(""); }}>
