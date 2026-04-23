@@ -5,7 +5,7 @@ import {
   ScrollText, Search, X, ChevronDown, ChevronUp, RefreshCw,
   UserPlus, UserMinus, Pencil, ClipboardList, CheckCircle2,
   Trash2, Banknote, Settings, Lock, Unlock, FileText,
-  ClipboardCheck, Trash,
+  ClipboardCheck, Trash, RotateCcw,
 } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -18,7 +18,7 @@ import { Timestamp } from "firebase/firestore";
 const ICON_MAP: Record<string, React.FC<LucideProps>> = {
   UserPlus, UserMinus, Pencil, ClipboardList, CheckCircle2,
   Trash2, Banknote, Settings, Lock, Unlock, FileText,
-  ClipboardCheck, Trash,
+  ClipboardCheck, Trash, RotateCcw,
 };
 
 function ActionIcon({ name, color }: { name: string; color: string }) {
@@ -33,7 +33,7 @@ const ACTION_META: Record<string, { label: string; icon: string; color: string }
   hapus_member: { label: "Hapus Pelanggan", icon: "UserMinus", color: "var(--color-belum)" },
   entry_meter: { label: "Entry Meter", icon: "ClipboardList", color: "var(--color-primary)" },
   lunas: { label: "Tandai Lunas", icon: "CheckCircle2", color: "var(--color-lunas)" },
-  batal_lunas: { label: "Batal Lunas", emoji: "↩️", color: "var(--color-tunggakan)" },
+  batal_lunas: { label: "Batal Lunas", icon: "RotateCcw", color: "var(--color-tunggakan)" },
   hapus_tagihan: { label: "Hapus Tagihan", icon: "Trash2", color: "var(--color-belum)" },
   tambah_operasional: { label: "Catat Pengeluaran", icon: "Banknote", color: "var(--color-tunggakan)" },
   hapus_operasional: { label: "Hapus Pengeluaran", icon: "Trash2", color: "var(--color-belum)" },
