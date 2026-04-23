@@ -251,7 +251,6 @@ export default function LogView() {
                 style={{
                   padding: "14px 16px",
                   background: "var(--color-card)",
-                  borderLeft: `3px solid ${meta.color}`,
                   border: "1px solid var(--color-border)",
                   borderLeft: `3px solid ${meta.color}`,
                   borderRadius: 10,
