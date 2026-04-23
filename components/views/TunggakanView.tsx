@@ -145,7 +145,7 @@ function TunggakanGroupCard({
           {group.tagihan.map((t, idx) => (
             <div
               key={t.id}
-              className="px-4 py-3"
+              className="px-4 py-4"
               style={{
                 borderBottom:
                   idx < group.tagihan.length - 1
@@ -375,39 +375,39 @@ export default function TunggakanView() {
 
       {/* ── Stat summary ── */}
       {!loading && tunggakan.length > 0 && (
-        <div className="flex gap-2 mb-4">
+        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
           <div
-            className="card p-3 flex-1"
-            style={{ borderLeft: "3px solid var(--color-tunggakan)" }}
+            className="card flex-1"
+            style={{ borderLeft: "3px solid var(--color-tunggakan)", padding: "14px 10px" }}
           >
             <div className="section-label mb-1">Total Nominal</div>
             <div
-              className="mono font-bold text-base"
-              style={{ color: "var(--color-tunggakan)" }}
+              className="mono font-bold"
+              style={{ color: "var(--color-tunggakan)", fontSize: 13 }}
             >
               {formatRp(totalNominal)}
             </div>
           </div>
           <div
-            className="card p-3 flex-1"
-            style={{ borderLeft: "3px solid var(--color-belum)" }}
+            className="card flex-1"
+            style={{ borderLeft: "3px solid var(--color-belum)", padding: "14px 10px" }}
           >
             <div className="section-label mb-1">Pelanggan</div>
             <div
-              className="mono font-bold text-base"
-              style={{ color: "var(--color-belum)" }}
+              className="mono font-bold"
+              style={{ color: "var(--color-belum)", fontSize: 13 }}
             >
               {totalPelanggan} orang
             </div>
           </div>
           <div
-            className="card p-3 flex-1"
-            style={{ borderLeft: "3px solid var(--color-txt3)" }}
+            className="card flex-1"
+            style={{ borderLeft: "3px solid var(--color-txt3)", padding: "14px 10px" }}
           >
             <div className="section-label mb-1">Tagihan</div>
             <div
-              className="mono font-bold text-base"
-              style={{ color: "var(--color-txt2)" }}
+              className="mono font-bold"
+              style={{ color: "var(--color-txt2)", fontSize: 13 }}
             >
               {totalBulan} bulan
             </div>
@@ -462,7 +462,7 @@ export default function TunggakanView() {
             <Share2 size={14} /> Kirim Daftar Tunggakan ke WA
           </button>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {groups.map((g) => (
               <TunggakanGroupCard
                 key={g.memberId}

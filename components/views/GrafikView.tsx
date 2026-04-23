@@ -416,7 +416,7 @@ export default function GrafikView() {
                 icon={<Trophy size={16} />}
                 title={`Top Pemakaian — ${MONTHS[activeBulan - 1]} ${selectedTahun}`}
               />
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-4">
                 {topPelanggan.map((p, idx) => {
                   const maxM3 = topPelanggan[0].pemakaian || 1;
                   const pct = (p.pemakaian / maxM3) * 100;

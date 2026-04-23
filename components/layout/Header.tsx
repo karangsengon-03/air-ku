@@ -93,9 +93,6 @@ export default function Header({ title }: HeaderProps) {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: "var(--color-txt)" }}>{title}</div>
-          <div style={{ fontSize: 10, color: "var(--color-txt3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {DESA_INFO.nama} · {DESA_INFO.kecamatan} · {DESA_INFO.kabupaten}
-          </div>
         </div>
 
         {/* Periode picker */}

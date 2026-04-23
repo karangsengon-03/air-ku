@@ -22,6 +22,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // ── Service Worker: register + auto-reload saat update ───────────────────
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.register("/sw.js").then((reg) => {
+      // Cek update tiap kali app di-focus
+      const checkUpdate = () => reg.update().catch(() => {});
+      window.addEventListener("focus", checkUpdate);
+
+      // Saat SW baru selesai install → langsung aktifkan
+      reg.addEventListener("updatefound", () => {
+        const newWorker = reg.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          // SW baru sudah activated dan skipWaiting sudah dijalankan
+          if (newWorker.state === "activated") {
+            // Soft reload — cukup window.location.reload()
+            window.location.reload();
+          }
+        });
+      });
+
+      return () => window.removeEventListener("focus", checkUpdate);
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     const saved = localStorage.getItem("airku-dark");
     if (saved === "1") {

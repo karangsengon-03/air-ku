@@ -22,7 +22,7 @@ export const DESA_INFO = {
 
 export const PAGE_TITLES: Record<string, string> = {
   dashboard: "Beranda",
-  entry: "Entry / Bayar",
+  entry: "Entry Bayar",
   tagihan: "Tagihan",
   rekap: "Rekap",
   tunggakan: "Tunggakan",

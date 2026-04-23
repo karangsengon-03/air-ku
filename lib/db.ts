@@ -95,6 +95,8 @@ export async function saveTagihan(
     ...data,
     nomorTagihan,
     tanggalEntry: serverTimestamp(),
+    // Auto-set tanggalBayar: lunas = server timestamp, belum = null
+    tanggalBayar: data.status === "lunas" ? serverTimestamp() : null,
   };
 
   const ref = await addDoc(collection(db, "tagihan"), docData);

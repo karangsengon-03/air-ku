@@ -325,26 +325,26 @@ export default function RekapView() {
       {!loading && filtered.length > 0 && (
         <>
           {/* Summary cards */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="card p-3" style={{ borderLeft: "3px solid var(--color-primary)" }}>
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="card" style={{ borderLeft: "3px solid var(--color-primary)", padding: "14px 12px" }}>
               <div className="section-label mb-1">Terkumpul</div>
               <div className="mono font-bold text-sm" style={{ color: "var(--color-primary)" }}>
                 {formatRp(totalTerkumpul)}
               </div>
             </div>
-            <div className="card p-3" style={{ borderLeft: "3px solid var(--color-txt3)" }}>
+            <div className="card" style={{ borderLeft: "3px solid var(--color-txt3)", padding: "14px 12px" }}>
               <div className="section-label mb-1">Total Tagihan</div>
               <div className="mono font-bold text-sm" style={{ color: "var(--color-txt2)" }}>
                 {formatRp(totalTagihan)}
               </div>
             </div>
-            <div className="card p-3" style={{ borderLeft: "3px solid var(--color-lunas)" }}>
+            <div className="card" style={{ borderLeft: "3px solid var(--color-lunas)", padding: "14px 12px" }}>
               <div className="section-label mb-1">Lunas / Total</div>
               <div className="mono font-bold text-sm" style={{ color: "var(--color-lunas)" }}>
                 {jumlahLunas} / {filtered.length}
               </div>
             </div>
-            <div className="card p-3" style={{ borderLeft: "3px solid var(--color-accent)" }}>
+            <div className="card" style={{ borderLeft: "3px solid var(--color-accent)", padding: "14px 12px" }}>
               <div className="section-label mb-1">Total Pemakaian</div>
               <div className="mono font-bold text-sm" style={{ color: "var(--color-accent)" }}>
                 {formatM3(totalM3)}
@@ -354,8 +354,8 @@ export default function RekapView() {
 
           {totalOps > 0 && (
             <div
-              className="card p-3 mb-4 flex justify-between items-center"
-              style={{ borderLeft: "3px solid var(--color-tunggakan)" }}
+              className="card mb-4 flex justify-between items-center"
+              style={{ borderLeft: "3px solid var(--color-tunggakan)", padding: "14px 14px" }}
             >
               <div>
                 <div className="section-label mb-0.5">Operasional</div>

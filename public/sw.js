@@ -1,11 +1,10 @@
-const CACHE_NAME = "airku-v2";
+const CACHE_NAME = "airku-v3";
 
 const PRECACHE_ASSETS = [
   "/",
   "/login",
   "/dashboard",
   "/manifest.json",
-  "/favicon.svg",
 ];
 
 const NETWORK_ONLY_HOSTS = [
@@ -17,6 +16,7 @@ const NETWORK_ONLY_HOSTS = [
   "firebaseinstallations.googleapis.com",
 ];
 
+// ── Install: precache & skipWaiting langsung ─────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
@@ -25,28 +25,39 @@ self.addEventListener("install", (event) => {
       );
     })
   );
+  // skipWaiting langsung agar versi baru aktif tanpa menunggu tab lama ditutup
   self.skipWaiting();
 });
 
+// ── Activate: hapus cache lama + claim semua client ──────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
+// ── Fetch ────────────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
   if (NETWORK_ONLY_HOSTS.some((h) => url.hostname.includes(h))) return;
   if (!url.protocol.startsWith("http")) return;
 
+  // Static Next.js chunks → cache-first
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(cacheFirst(event.request));
     return;
   }
+
+  // Icons & manifest → cache-first
+  if (url.pathname.startsWith("/icons/") || url.pathname === "/manifest.json") {
+    event.respondWith(cacheFirst(event.request));
+    return;
+  }
+
+  // Semua lainnya → network-first
   event.respondWith(networkFirst(event.request));
 });
 
@@ -87,8 +98,9 @@ async function networkFirst(request) {
   }
 }
 
+// ── Message handler ──────────────────────────────────────────────────────────
 self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "SKIP_WAITING") {
+  if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 });

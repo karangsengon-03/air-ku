@@ -128,7 +128,7 @@ export default function LogView() {
   const hasActiveFilter = filterAction !== "semua" || filterTanggal || search;
 
   return (
-    <div style={{ padding: "0 16px 24px" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
 
       {/* ── Summary */}
       <div className="card" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -241,7 +241,7 @@ export default function LogView() {
           )}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {filtered.map((log, idx) => {
             const meta = getActionMeta(log.action);
             const isMe = log.user === firebaseUser?.email;
@@ -249,11 +249,12 @@ export default function LogView() {
               <div
                 key={log.id || idx}
                 style={{
-                  padding: "13px 16px",
+                  padding: "14px 16px",
                   background: "var(--color-card)",
                   borderLeft: `3px solid ${meta.color}`,
-                  borderBottom: "1px solid var(--color-border)",
-                  borderRadius: idx === 0 ? "10px 10px 0 0" : idx === filtered.length - 1 ? "0 0 10px 10px" : 0,
+                  border: "1px solid var(--color-border)",
+                  borderLeft: `3px solid ${meta.color}`,
+                  borderRadius: 10,
                 }}
               >
                 <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>

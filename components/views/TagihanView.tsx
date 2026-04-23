@@ -103,9 +103,9 @@ export default function TagihanView() {
         </p>
       )}
 
-      {/* Hint tandai lunas */}
+      {/* Hint */}
       <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 12, color: "var(--color-primary)", fontWeight: 500 }}>
-        💡 Untuk tandai lunas/belum — gunakan menu <strong>Entry</strong>
+        💡 Entry pembayaran dilakukan di menu <strong>Entry Bayar</strong>. Belum entry = Belum Bayar otomatis.
       </div>
 
       {/* List */}
