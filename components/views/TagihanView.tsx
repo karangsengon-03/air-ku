@@ -166,11 +166,11 @@ export default function TagihanView() {
                 {/* Aksi — hanya share + download */}
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => handleShare(t)}
-                    style={{ flex: 1, height: 38, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 600 }}>
+                    style={{ flex: 1, height: 40, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-primary)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 600 }}>
                     <Share2 size={14} /> Bagikan WA
                   </button>
                   <button onClick={() => handleDownload(t)}
-                    style={{ width: 38, height: 38, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-txt3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    style={{ width: 38, height: 40, borderRadius: 8, border: "1px solid var(--color-border)", background: "var(--color-bg)", color: "var(--color-txt3)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Download size={14} />
                   </button>
                 </div>

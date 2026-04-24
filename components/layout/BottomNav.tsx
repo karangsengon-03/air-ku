@@ -81,7 +81,7 @@ export default function BottomNav() {
                     onClick={() => setShowMore(false)}
                     style={{
                       display: "flex", flexDirection: "column", alignItems: "center",
-                      padding: "14px 8px 12px", borderRadius: 12, textDecoration: "none",
+                      padding: "14px 8px 12px", borderRadius: 10, textDecoration: "none",
                       background: active ? "rgba(3,105,161,0.1)" : "var(--color-bg)",
                       border: active ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
                       color: active ? "var(--color-primary)" : "var(--color-txt2)",

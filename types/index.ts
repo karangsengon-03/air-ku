@@ -3,6 +3,12 @@ export type MemberStatus = "aktif" | "nonaktif" | "pindah";
 export type TagihanStatus = "lunas" | "belum";
 export type ModeTunggakan = "carryover" | "mandiri";
 
+// ── Blok tarif individual
+export interface BlokTarif {
+  batasAtas: number | null; // null = tidak terbatas (blok terakhir)
+  harga: number;            // Rp/m³
+}
+
 export interface UserRole {
   uid: string;
   role: Role;
@@ -14,9 +20,12 @@ export interface UserRole {
 export interface AppSettings {
   globalLock: boolean;
   abonemen: number;
+  // Legacy 2-blok (tetap untuk backward compat)
   hargaBlok1: number;
   batasBlok: number;
   hargaBlok2: number;
+  // Multi-blok baru (override legacy jika ada)
+  blokTarif?: BlokTarif[];
   modeTunggakan: ModeTunggakan;
   dusunList: string[];
   rtPerDusun: Record<string, string[]>;
@@ -32,6 +41,10 @@ export const defaultSettings: AppSettings = {
   hargaBlok1: 2000,
   batasBlok: 10,
   hargaBlok2: 3000,
+  blokTarif: [
+    { batasAtas: 10, harga: 2000 },
+    { batasAtas: null, harga: 3000 },
+  ],
   modeTunggakan: "mandiri",
   dusunList: [],
   rtPerDusun: {},
@@ -48,8 +61,15 @@ export interface HargaHistory {
   hargaBlok1: number;
   batasBlok: number;
   hargaBlok2: number;
+  blokTarif?: BlokTarif[]; // multi-blok snapshot
   catatan: string;
   diubahOleh: string;
+}
+
+export interface BlokSnapshot {
+  batasAtas: number | null;
+  harga: number;
+  subtotal: number;
 }
 
 export interface Member {
@@ -80,9 +100,12 @@ export interface Tagihan {
   pemakaian: number;
   hargaHistoryId: string;
   abonemenSnapshot: number;
+  // Legacy 2-blok snapshot (tetap untuk backward compat)
   hargaBlok1Snapshot: number;
   batasBlokSnapshot: number;
   hargaBlok2Snapshot: number;
+  // Multi-blok snapshot (jika ada)
+  blokSnapshotList?: BlokSnapshot[];
   subtotalBlok1: number;
   subtotalBlok2: number;
   subtotalPemakaian: number;

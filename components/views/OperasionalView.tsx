@@ -141,7 +141,7 @@ export default function OperasionalView() {
           </div>
         </div>
         <div style={{
-          width: 48, height: 48, borderRadius: 12,
+          width: 48, height: 48, borderRadius: 10,
           background: "rgba(185,28,28,0.1)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>

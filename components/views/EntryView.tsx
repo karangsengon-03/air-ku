@@ -130,11 +130,11 @@ export default function EntryView() {
             hargaHistoryId,
             abonemenSnapshot: settings.abonemen, hargaBlok1Snapshot: settings.hargaBlok1,
             batasBlokSnapshot: settings.batasBlok, hargaBlok2Snapshot: settings.hargaBlok2,
+            blokSnapshotList: isQp ? [] : (kalkulasi?.blokDetail ?? []),
             subtotalBlok1: isQp ? 0 : (kalkulasi?.subtotalBlok1 ?? 0),
             subtotalBlok2: isQp ? 0 : (kalkulasi?.subtotalBlok2 ?? 0),
             subtotalPemakaian: isQp ? totalFinal : (kalkulasi?.subtotalPemakaian ?? 0),
             total: totalFinal,
-            // AUTO LUNAS: entry bayar = langsung lunas
             status: "lunas",
             tanggalBayar: new Date(),
             entryOleh: userRole?.email ?? "",
@@ -400,15 +400,23 @@ export default function EntryView() {
                   {kalkulasi && (
                     <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: 12, display: "flex", flexDirection: "column", gap: 6 }}>
                       <p style={{ fontWeight: 700, fontSize: 13, color: "var(--color-txt)", marginBottom: 2 }}>Preview Tagihan</p>
-                      {[
-                        { label: "Pemakaian", val: formatM3(kalkulasi.pemakaian) },
-                        { label: "Abonemen", val: formatRp(settings.abonemen) },
-                        ...(kalkulasi.subtotalBlok1 > 0 ? [{ label: `Blok 1 (≤${settings.batasBlok}m³)`, val: formatRp(kalkulasi.subtotalBlok1) }] : []),
-                        ...(kalkulasi.subtotalBlok2 > 0 ? [{ label: `Blok 2 (>${settings.batasBlok}m³)`, val: formatRp(kalkulasi.subtotalBlok2) }] : []),
-                      ].map((row) => (
-                        <div key={row.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-                          <span style={{ color: "var(--color-txt3)" }}>{row.label}</span>
-                          <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{row.val}</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "var(--color-txt3)" }}>Pemakaian</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{formatM3(kalkulasi.pemakaian)}</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                        <span style={{ color: "var(--color-txt3)" }}>Abonemen</span>
+                        <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{formatRp(settings.abonemen)}</span>
+                      </div>
+                      {kalkulasi.blokDetail.map((blok, idx) => blok.subtotal > 0 && (
+                        <div key={idx} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+                          <span style={{ color: "var(--color-txt3)" }}>
+                            Blok {idx + 1}
+                            {blok.batasAtas !== null
+                              ? ` (≤${blok.batasAtas}m³)`
+                              : ` (>${(kalkulasi.blokDetail[idx - 1]?.batasAtas ?? 0)}m³)`}
+                          </span>
+                          <span style={{ fontFamily: "monospace", fontWeight: 600 }}>{formatRp(blok.subtotal)}</span>
                         </div>
                       ))}
                       <div style={{ borderTop: "1px solid var(--color-border)", paddingTop: 8, display: "flex", justifyContent: "space-between" }}>
@@ -442,7 +450,7 @@ export default function EntryView() {
       {step === 3 && savedResult && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="card" style={{ padding: 24, textAlign: "center" }}>
-            <div style={{ width: 60, height: 60, borderRadius: "50%", background: "rgba(21,128,61,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+            <div style={{ width: 60, height: 52, borderRadius: "50%", background: "rgba(21,128,61,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
               <CheckCircle2 size={30} style={{ color: "var(--color-lunas)" }} />
             </div>
             <p style={{ fontWeight: 800, fontSize: 18, color: "var(--color-txt)" }}>Entry Bayar Berhasil!</p>

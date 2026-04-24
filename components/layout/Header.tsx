@@ -112,7 +112,7 @@ export default function Header({ title }: HeaderProps) {
               <div style={{
                 position: "absolute", right: 0, top: "calc(100% + 6px)",
                 background: "var(--color-card)", border: "1px solid var(--color-border)",
-                borderRadius: 14, zIndex: 101, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                borderRadius: 16, zIndex: 101, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
                 padding: 10, minWidth: 210,
               }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", padding: "2px 6px 8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>

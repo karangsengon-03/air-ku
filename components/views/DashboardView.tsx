@@ -101,7 +101,7 @@ export default function DashboardView() {
         },
       ].map((item) => (
         <div key={item.label} className="card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, background: item.color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: item.color }}>
+          <div style={{ width: 38, height: 40, borderRadius: 10, background: item.color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: item.color }}>
             {item.icon}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>

@@ -1,38 +1,71 @@
-import { AppSettings } from "@/types";
+import { AppSettings, BlokTarif, BlokSnapshot } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
 // ─── Kalkulasi Tagihan ───────────────────────────────────────────────────────
 
 export interface KalkulasiTagihan {
   pemakaian: number;
-  subtotalBlok1: number;
-  subtotalBlok2: number;
+  subtotalBlok1: number;  // legacy compat (blok pertama)
+  subtotalBlok2: number;  // legacy compat (blok kedua)
   subtotalPemakaian: number;
   total: number;
+  blokDetail: BlokSnapshot[]; // detail per blok (multi-blok)
+}
+
+/** Ambil blokTarif dari settings — fallback ke legacy 2-blok jika tidak ada */
+export function getBlokTarif(settings: Pick<AppSettings, "hargaBlok1" | "batasBlok" | "hargaBlok2" | "blokTarif">): BlokTarif[] {
+  if (settings.blokTarif && settings.blokTarif.length >= 1) {
+    return settings.blokTarif;
+  }
+  // Legacy fallback
+  return [
+    { batasAtas: settings.batasBlok, harga: settings.hargaBlok1 },
+    { batasAtas: null, harga: settings.hargaBlok2 },
+  ];
 }
 
 export function hitungTagihan(
   meterAwal: number,
   meterAkhir: number,
-  settings: Pick<AppSettings, "abonemen" | "hargaBlok1" | "batasBlok" | "hargaBlok2">
+  settings: Pick<AppSettings, "abonemen" | "hargaBlok1" | "batasBlok" | "hargaBlok2" | "blokTarif">
 ): KalkulasiTagihan {
   const pemakaian = Math.max(0, meterAkhir - meterAwal);
-  const { abonemen, hargaBlok1, batasBlok, hargaBlok2 } = settings;
+  const blokTarif = getBlokTarif(settings);
+  const { abonemen } = settings;
 
-  let subtotalBlok1 = 0;
-  let subtotalBlok2 = 0;
+  const blokDetail: BlokSnapshot[] = [];
+  let sisaPemakaian = pemakaian;
+  let batasSebelumnya = 0;
 
-  if (pemakaian <= batasBlok) {
-    subtotalBlok1 = pemakaian * hargaBlok1;
-  } else {
-    subtotalBlok1 = batasBlok * hargaBlok1;
-    subtotalBlok2 = (pemakaian - batasBlok) * hargaBlok2;
+  for (let i = 0; i < blokTarif.length; i++) {
+    const blok = blokTarif[i];
+    const isLast = i === blokTarif.length - 1;
+
+    if (sisaPemakaian <= 0) {
+      blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, subtotal: 0 });
+      continue;
+    }
+
+    let pemakaianBlok: number;
+    if (isLast || blok.batasAtas === null) {
+      pemakaianBlok = sisaPemakaian;
+    } else {
+      const kapasitasBlok = blok.batasAtas - batasSebelumnya;
+      pemakaianBlok = Math.min(sisaPemakaian, kapasitasBlok);
+    }
+
+    const subtotal = pemakaianBlok * blok.harga;
+    blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, subtotal });
+    sisaPemakaian -= pemakaianBlok;
+    if (blok.batasAtas !== null) batasSebelumnya = blok.batasAtas;
   }
 
-  const subtotalPemakaian = subtotalBlok1 + subtotalBlok2;
+  const subtotalPemakaian = blokDetail.reduce((s, b) => s + b.subtotal, 0);
+  const subtotalBlok1 = blokDetail[0]?.subtotal ?? 0;
+  const subtotalBlok2 = blokDetail[1]?.subtotal ?? 0;
   const total = abonemen + subtotalPemakaian;
 
-  return { pemakaian, subtotalBlok1, subtotalBlok2, subtotalPemakaian, total };
+  return { pemakaian, subtotalBlok1, subtotalBlok2, subtotalPemakaian, total, blokDetail };
 }
 
 // ─── Format Helpers ──────────────────────────────────────────────────────────
