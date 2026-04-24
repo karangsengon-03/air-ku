@@ -710,54 +710,6 @@ function AccountsSection() {
   return (
     <Section icon={<UserCog size={18} />} title="Manajemen Akun">
       <div style={{ paddingTop: 12 }}>
-        {/* Petunjuk tambah akun manual */}
-        <div style={{
-          background: "rgba(3,105,161,0.08)", borderRadius: 8, padding: 12, marginBottom: 14,
-          border: "1px solid rgba(3,105,161,0.2)",
-        }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-primary)", marginBottom: 6 }}>
-            Cara Menambah Akun
-          </div>
-          <div style={{ fontSize: 12, color: "var(--color-txt2)", lineHeight: 1.7 }}>
-            Tambah akun dilakukan manual di <strong>Firebase Console</strong>:
-          </div>
-          <ol style={{ fontSize: 12, color: "var(--color-txt2)", paddingLeft: 18, margin: "6px 0 0", lineHeight: 1.9 }}>
-            <li>Buka Firebase Console → <strong>Authentication → Users → Add user</strong></li>
-            <li>Isi email dan password, catat <strong>UID</strong> yang muncul</li>
-            <li>Buka <strong>Firestore → Collection: <code style={{ background: "var(--color-bg)", padding: "1px 4px", borderRadius: 3 }}>roles</code></strong></li>
-            <li>Tambah dokumen baru dengan <strong>Document ID = UID</strong> tersebut</li>
-            <li>Isi fields sesuai contoh di bawah</li>
-          </ol>
-          <div style={{ marginTop: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", marginBottom: 4 }}>
-              Contoh untuk Admin:
-            </div>
-            <div style={{
-              background: "var(--color-bg)", borderRadius: 6, padding: 8, fontFamily: "monospace",
-              fontSize: 11, color: "var(--color-txt2)", lineHeight: 1.8,
-            }}>
-              <div><span style={{ color: "var(--color-primary)" }}>role</span>: <span style={{ color: "var(--color-lunas)" }}>"admin"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>nama</span>: <span style={{ color: "var(--color-lunas)" }}>"Budi Santoso"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>email</span>: <span style={{ color: "var(--color-lunas)" }}>"budi@gmail.com"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>createdAt</span>: <span style={{ color: "var(--color-txt3)" }}>timestamp (klik "Set to now")</span></div>
-            </div>
-          </div>
-          <div style={{ marginTop: 8 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", marginBottom: 4 }}>
-              Contoh untuk Penagih:
-            </div>
-            <div style={{
-              background: "var(--color-bg)", borderRadius: 6, padding: 8, fontFamily: "monospace",
-              fontSize: 11, color: "var(--color-txt2)", lineHeight: 1.8,
-            }}>
-              <div><span style={{ color: "var(--color-primary)" }}>role</span>: <span style={{ color: "var(--color-tunggakan)" }}>"penagih"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>nama</span>: <span style={{ color: "var(--color-lunas)" }}>"Pak Slamet"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>email</span>: <span style={{ color: "var(--color-lunas)" }}>"slamet@gmail.com"</span></div>
-              <div><span style={{ color: "var(--color-primary)" }}>createdAt</span>: <span style={{ color: "var(--color-txt3)" }}>timestamp (klik "Set to now")</span></div>
-            </div>
-          </div>
-        </div>
-
         {/* Daftar akun */}
         <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt2)", marginBottom: 8 }}>
           Daftar Akun Terdaftar
