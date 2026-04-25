@@ -108,7 +108,7 @@ export default function OperasionalView() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* ── Bulan Picker */}
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

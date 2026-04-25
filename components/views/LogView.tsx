@@ -154,7 +154,7 @@ export default function LogView() {
   const hasActiveFilter = filterAction !== "semua" || filterTanggal || search;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
       {/* ── Summary */}
       <div className="card" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>

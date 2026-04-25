@@ -134,10 +134,13 @@ export default function GrafikView() {
     if (!firebaseUser) return;
     setLoading(true);
     try {
-      const [tagihan, ops] = await Promise.all([
+      const [tagihan, ops] = await Promise.allSettled([
         getTagihanByTahun(selectedTahun),
         getOperasionalByTahun(selectedTahun),
       ]);
+
+      const tagihanData = tagihan.status === "fulfilled" ? tagihan.value : [];
+      const opsData = ops.status === "fulfilled" ? ops.value : [];
 
       // ── Data per bulan ──────────────────────────────────────────────────────
       const bulanMap = new Map<number, BulanData>();
@@ -153,7 +156,7 @@ export default function GrafikView() {
         });
       }
 
-      for (const t of tagihan) {
+      for (const t of tagihanData) {
         const d = bulanMap.get(t.bulan)!;
         d.m3 += t.pemakaian;
         d.jumlahTotal++;
@@ -163,7 +166,7 @@ export default function GrafikView() {
         }
       }
 
-      for (const o of ops) {
+      for (const o of opsData) {
         const d = bulanMap.get(o.bulan);
         if (d) d.operasional += o.nominal;
       }
@@ -181,7 +184,7 @@ export default function GrafikView() {
       setBulanData(bulanArr);
 
       // ── Komparasi dusun (bulan aktif) ───────────────────────────────────────
-      const tagihanBulanIni = tagihan.filter(
+      const tagihanBulanIni = tagihanData.filter(
         (t) => t.bulan === activeBulan && t.tahun === selectedTahun
       );
       const dusunMap = new Map<string, DusunData>();
@@ -239,7 +242,7 @@ export default function GrafikView() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       {/* ── Navigasi tahun ── */}
       <div className="flex items-center gap-2 mb-5">
         <button
