@@ -4,8 +4,8 @@
   "description": "Aplikasi iuran air bulanan desa",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0369A1",
-  "theme_color": "#0369A1",
+  "background_color": "#0A3975",
+  "theme_color": "#0A3975",
   "orientation": "portrait",
   "icons": [
     { "src": "/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },

@@ -9,11 +9,11 @@ export default function LoadingScreen() {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      background: "#0369A1",
+      background: "#0A3975",
       gap: 20,
     }}>
       <img
-        src="/icons/icon-512.png"
+        src="/icons/icon-192.png"
         alt={APP_NAME}
         width={140}
         height={140}
