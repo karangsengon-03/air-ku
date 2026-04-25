@@ -9,7 +9,7 @@ export default function LoadingScreen() {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      background: "#0A3975",
+      background: "#073571",
       gap: 20,
     }}>
       <img
