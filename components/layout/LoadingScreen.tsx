@@ -13,7 +13,7 @@ export default function LoadingScreen() {
       gap: 20,
     }}>
       <img
-        src="/icons/icon-512-maskable.png"
+        src="/icons/icon-512.png"
         alt={APP_NAME}
         width={140}
         height={140}

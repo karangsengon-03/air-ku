@@ -78,7 +78,7 @@ export default function LoginPage() {
       {/* Logo */}
       <div style={{ marginBottom: 32, textAlign: "center" }}>
         <img
-          src="/icons/icon-192-maskable.png"
+          src="/icons/icon-192.png"
           alt={APP_NAME}
           width={80}
           height={80}
