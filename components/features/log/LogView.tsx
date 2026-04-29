@@ -124,7 +124,7 @@ export default function LogView() {
 
       {/* Filter Panel */}
       {showFilter && (
-        <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
             <div className="section-label">Tanggal</div>
             <input

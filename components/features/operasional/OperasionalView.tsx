@@ -76,7 +76,7 @@ export default function OperasionalView() {
       </div>
 
       {/* Summary Card */}
-      <div className="card" style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="card" style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div className="section-label">Total Pengeluaran</div>
           <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--color-belum)" }}>

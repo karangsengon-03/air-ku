@@ -38,7 +38,7 @@ export default function QuickPayForm({
           <button
             onClick={() => onPresetChange(0 === qpPreset ? null : 0)}
             style={{
-              padding: "10px 4px", borderRadius: 8, fontSize: 13, fontWeight: 800,
+              padding: "10px 12px", borderRadius: 8, fontSize: 13, fontWeight: 800,
               border: qpPreset === 0 ? "2px solid var(--color-lunas)" : "2px solid var(--color-border)",
               background: qpPreset === 0 ? "rgba(21,128,61,0.1)" : "var(--color-bg)",
               color: qpPreset === 0 ? "var(--color-lunas)" : "var(--color-txt3)",
@@ -52,7 +52,7 @@ export default function QuickPayForm({
               key={v}
               onClick={() => onPresetChange(v === qpPreset ? null : v)}
               style={{
-                padding: "10px 4px", borderRadius: 8, fontSize: 14, fontWeight: 800,
+                padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 800,
                 border: qpPreset === v ? "2px solid var(--color-primary)" : "2px solid var(--color-border)",
                 background: qpPreset === v ? "rgba(3,105,161,0.1)" : "var(--color-bg)",
                 color: qpPreset === v ? "var(--color-primary)" : "var(--color-txt)",
@@ -84,7 +84,7 @@ export default function QuickPayForm({
       </div>
 
       {qpValid && (
-        <div style={{ background: "rgba(3,105,161,0.08)", borderRadius: 10, padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ background: "rgba(3,105,161,0.08)", borderRadius: 10, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: 13, color: "var(--color-txt2)", fontWeight: 600 }}>Total Pembayaran</span>
           <span style={{ fontSize: 22, fontWeight: 900, color: qpIsZero ? "var(--color-lunas)" : "var(--color-primary)", fontFamily: "JetBrains Mono, monospace" }}>
             {qpIsZero ? "Rp 0 (Baru)" : formatRp(qpNominal)}

@@ -67,7 +67,7 @@ export default function DashboardView() {
 
       {/* Ringkasan utama */}
       <div className="card" style={{ padding: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <div className="flex-min">
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
               Total Terkumpul — {bulanLabel}
@@ -106,7 +106,7 @@ export default function DashboardView() {
           sub: tagihan.length > 0 ? `Rata-rata ${formatM3(Math.round(totalM3 / tagihan.length))}/pelanggan` : "Belum ada data",
         },
       ].map((item) => (
-        <div key={item.label} className="card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+        <div key={item.label} className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 12 }}>
           <div style={{ width: 38, height: 40, borderRadius: 10, background: item.color + "20", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: item.color }}>
             {item.icon}
           </div>
@@ -120,7 +120,7 @@ export default function DashboardView() {
 
       {/* Pelanggan aktif (admin) */}
       {userRole?.role === "admin" && (
-        <div className="card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Pelanggan Aktif</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-txt)", fontFamily: "JetBrains Mono, monospace" }}>{membersAktif.length} orang</div>

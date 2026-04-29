@@ -134,7 +134,7 @@ export default function GrafikView() {
       ) : (
         <>
           {/* Chart 1: Tren pemakaian m³ */}
-          <div className="card" style={{ padding: "18px 16px" }}>
+          <div className="card" style={{ padding: "14px 16px" }}>
             <SectionHeader icon={<Droplets size={16} />} title={`Tren Pemakaian Air ${selectedTahun}`} />
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={bulanData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -148,7 +148,7 @@ export default function GrafikView() {
           </div>
 
           {/* Chart 2: Tren Pendapatan */}
-          <div className="card" style={{ padding: "18px 16px" }}>
+          <div className="card" style={{ padding: "14px 16px" }}>
             <SectionHeader icon={<BarChart2 size={16} />} title={`Tren Pendapatan ${selectedTahun}`} />
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={bulanData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }} barSize={14}>
@@ -171,7 +171,7 @@ export default function GrafikView() {
 
           {/* Chart 3: Per Dusun */}
           {dusunData.length > 1 && (
-            <div className="card" style={{ padding: "18px 16px" }}>
+            <div className="card" style={{ padding: "14px 16px" }}>
               <SectionHeader icon={<BarChart2 size={16} />} title={`Pemakaian per Dusun — ${MONTHS[activeBulan - 1]} ${selectedTahun}`} />
               <ResponsiveContainer width="100%" height={Math.max(160, dusunData.length * 44)}>
                 <BarChart data={dusunData} layout="vertical" margin={{ top: 0, right: 8, bottom: 0, left: 8 }} barSize={18}>
@@ -187,7 +187,7 @@ export default function GrafikView() {
 
           {/* List: Top 5 pemakaian */}
           {topPelanggan.length > 0 && (
-            <div className="card" style={{ padding: "18px 16px" }}>
+            <div className="card" style={{ padding: "14px 16px" }}>
               <SectionHeader icon={<Trophy size={16} />} title={`Top Pemakaian — ${MONTHS[activeBulan - 1]} ${selectedTahun}`} />
               <TopPelangganList data={topPelanggan} />
             </div>

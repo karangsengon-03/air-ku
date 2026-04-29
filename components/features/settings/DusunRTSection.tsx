@@ -137,7 +137,7 @@ export default function DusunRTSection({ settings, addToast, showConfirm }: Dusu
             </p>
           ) : dusunList.map((dusun) => (
             <div key={dusun} style={{ marginBottom: 8, border: "1px solid var(--color-border)", borderRadius: 10, overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", padding: "12px 14px", background: "var(--color-bg)", gap: 6 }}>
+              <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: "var(--color-bg)", gap: 6 }}>
                 <button
                   onClick={() => setExpandedDusun(expandedDusun === dusun ? null : dusun)}
                   style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--color-txt)", display: "flex", alignItems: "center", gap: 8 }}

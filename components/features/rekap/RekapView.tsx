@@ -105,20 +105,20 @@ export default function RekapView() {
 
       {/* Bulan picker */}
       {showBulanPicker && (
-        <div className="card" style={{ padding: "14px 14px" }}>
+        <div className="card" style={{ padding: "14px 16px" }}>
           <div className="section-label mb-2">Pilih Bulan</div>
           <div className="flex gap-2 mb-3 flex-wrap">
             {YEARS.map((y) => (
               <button key={y} onClick={() => setActiveBulanTahun(activeBulan, y)}
                 className={activeTahun === y ? "btn-primary" : "btn-secondary"}
-                style={{ height: 36, fontSize: 13, padding: "0 14px" }}>{y}</button>
+                style={{ height: 40, fontSize: 13, padding: "0 14px" }}>{y}</button>
             ))}
           </div>
           <div className="grid grid-cols-4 gap-2">
             {MONTHS.map((m, i) => (
               <button key={i} onClick={() => { setActiveBulanTahun(i + 1, activeTahun); setShowBulanPicker(false); }}
                 className={activeBulan === i + 1 ? "btn-primary" : "btn-secondary"}
-                style={{ height: 36, fontSize: 12, padding: 0 }}>
+                style={{ height: 40, fontSize: 12, padding: 0 }}>
                 {m.slice(0, 3)}
               </button>
             ))}
@@ -128,7 +128,7 @@ export default function RekapView() {
 
       {/* Filter Dusun / RT */}
       {dusunList.length > 0 && (
-        <div className="card" style={{ padding: "14px 14px" }}>
+        <div className="card" style={{ padding: "14px 16px" }}>
           <div className="flex items-center gap-2 mb-2">
             <Filter size={14} style={{ color: "var(--color-txt3)" }} />
             <span className="section-label" style={{ marginBottom: 0 }}>Filter</span>
@@ -193,7 +193,7 @@ export default function RekapView() {
               { label: "Lunas / Total", val: `${jumlahLunas} / ${filtered.length}`, color: "var(--color-lunas)" },
               { label: "Total Pemakaian", val: formatM3(totalM3), color: "var(--color-accent)" },
             ].map((s) => (
-              <div key={s.label} className="card" style={{ borderLeft: `3px solid ${s.color}`, padding: "14px 12px" }}>
+              <div key={s.label} className="card" style={{ borderLeft: `3px solid ${s.color}`, padding: "14px 16px" }}>
                 <div className="section-label mb-1">{s.label}</div>
                 <div className="mono font-bold text-sm" style={{ color: s.color }}>{s.val}</div>
               </div>
@@ -202,7 +202,7 @@ export default function RekapView() {
 
           {totalOps > 0 && (
             <div className="card mb-4 flex justify-between items-center"
-              style={{ borderLeft: "3px solid var(--color-tunggakan)", padding: "14px 14px" }}>
+              style={{ borderLeft: "3px solid var(--color-tunggakan)", padding: "14px 16px" }}>
               <div>
                 <div className="section-label mb-0.5">Operasional</div>
                 <div className="mono text-sm" style={{ color: "var(--color-tunggakan)" }}>{formatRp(totalOps)}</div>

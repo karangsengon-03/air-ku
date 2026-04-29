@@ -61,7 +61,7 @@ export default function MemberSelector({
               key={m.id}
               onClick={() => onSelect(m)}
               className="card"
-              style={{ width: "100%", padding: "12px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left", cursor: "pointer" }}
+              style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", textAlign: "left", cursor: "pointer" }}
             >
               <div>
                 <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>{m.nama}</p>

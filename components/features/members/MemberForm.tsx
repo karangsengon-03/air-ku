@@ -132,7 +132,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Nama */}
           <div>
             <div className="section-label">Nama Lengkap *</div>

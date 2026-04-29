@@ -71,7 +71,7 @@ export default function MemberDetail({ member: m, riwayat, loading, onClose }: M
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {riwayat.map((t) => (
               <div key={t.id} style={{
-                padding: "12px 14px", borderRadius: 10,
+                padding: "14px 16px", borderRadius: 10,
                 background: "var(--color-bg)", border: "1px solid var(--color-border)",
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>

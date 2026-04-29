@@ -79,7 +79,7 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {/* Label */}
           <div>
             <div className="section-label">Keterangan / Label *</div>

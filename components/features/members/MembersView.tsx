@@ -118,7 +118,7 @@ export default function MembersView() {
           { label: "Non-Aktif", value: stats.nonaktif, color: "var(--color-txt3)" },
           { label: "Pindah", value: stats.pindah, color: "var(--color-tunggakan)" },
         ].map((s) => (
-          <div key={s.label} className="card" style={{ padding: "10px 4px", textAlign: "center", minWidth: 0 }}>
+          <div key={s.label} className="card" style={{ padding: "10px 12px", textAlign: "center", minWidth: 0 }}>
             <div className="mono" style={{ fontSize: 18, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
             <div style={{ fontSize: 10, color: "var(--color-txt3)", marginTop: 3, fontWeight: 600 }}>{s.label}</div>
           </div>
@@ -150,8 +150,8 @@ export default function MembersView() {
         <button
           onClick={() => setShowFilter((v) => !v)}
           style={{
-            height: 36, paddingInline: 14, borderRadius: 8, fontSize: 12, fontWeight: 700,
-            border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
+            height: 40, paddingInline: 14, borderRadius: 8, fontSize: 12, fontWeight: 700,
+            border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
             background: (showFilter || activeFilterCount > 0) ? "var(--color-primary)" : "var(--color-bg)",
             color: (showFilter || activeFilterCount > 0) ? "#fff" : "var(--color-txt3)",
             outline: (!showFilter && activeFilterCount === 0) ? "1px solid var(--color-border)" : "none",
@@ -176,8 +176,8 @@ export default function MembersView() {
             key={key}
             onClick={() => toggleSort(key)}
             style={{
-              flex: 1, height: 36, borderRadius: 8, fontSize: 11, fontWeight: 700,
-              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 3,
+              flex: 1, height: 40, borderRadius: 8, fontSize: 11, fontWeight: 700,
+              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
               background: sortKey === key ? "var(--color-primary)" : "var(--color-bg)",
               color: sortKey === key ? "#fff" : "var(--color-txt3)",
               outline: sortKey !== key ? "1px solid var(--color-border)" : "none",
@@ -193,9 +193,9 @@ export default function MembersView() {
 
       {/* Filter Panel */}
       {showFilter && (
-        <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
           <div>
-            <div className="section-label" style={{ marginBottom: 8 }}>Status</div>
+            <div className="section-label">Status</div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {(["semua", "aktif", "nonaktif", "pindah"] as const).map((s) => (
                 <button key={s} onClick={() => setFilterStatus(s)} style={{
@@ -213,7 +213,7 @@ export default function MembersView() {
 
           {dusunList.length > 0 && (
             <div>
-              <div className="section-label" style={{ marginBottom: 8 }}>Dusun</div>
+              <div className="section-label">Dusun</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {["semua", ...dusunList].map((d) => (
                   <button key={d} onClick={() => setFilterDusun(d)} style={{

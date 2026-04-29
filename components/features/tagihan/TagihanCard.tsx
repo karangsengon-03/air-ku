@@ -17,7 +17,7 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
     <div
       className="card"
       style={{
-        padding: "12px 14px",
+        padding: "14px 16px",
         borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : "var(--color-belum)"}`,
       }}
     >

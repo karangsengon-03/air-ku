@@ -157,7 +157,7 @@ export function AccountsSection() {
             border: acc.uid === userRole?.uid ? "1px solid var(--color-primary)" : "1px solid var(--color-border)",
           }}>
             <div style={{
-              width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+              width: 36, height: 40, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
               background: acc.role === "admin" ? "rgba(3,105,161,0.12)" : "rgba(146,64,14,0.1)", flexShrink: 0,
             }}>
               <Users size={16} style={{ color: acc.role === "admin" ? "var(--color-primary)" : "var(--color-tunggakan)" }} />

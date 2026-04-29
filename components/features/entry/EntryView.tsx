@@ -193,7 +193,7 @@ export default function EntryView() {
         ] as { key: EntryMode; label: string; icon: typeof Zap }[]).map((m) => (
           <button key={m.key} onClick={() => { setEntryMode(m.key); handleReset(); }}
             style={{
-              flex: 1, padding: "10px 8px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+              flex: 1, padding: "10px 12px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
               background: entryMode === m.key ? "var(--color-primary)" : "var(--color-bg)",
               color: entryMode === m.key ? "#fff" : "var(--color-txt3)",
             }}>
@@ -227,7 +227,7 @@ export default function EntryView() {
       {step === 2 && selectedMember && (
         <div className="col-12">
           {/* Info pelanggan terpilih */}
-          <div className="card" style={{ padding: "12px 14px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div className="card" style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>{selectedMember.nama}</p>
               <p style={{ fontSize: 11, color: "var(--color-txt3)", marginTop: 2 }}>
@@ -236,7 +236,7 @@ export default function EntryView() {
             </div>
             <button
               onClick={() => { setStep(1); setSelectedMember(null); setSudahAda(null); }}
-              style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer" }}
+              style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, color: "var(--color-primary)", background: "none", border: "none", cursor: "pointer" }}
             >
               <ChevronLeft size={13} /> Ganti
             </button>
@@ -249,7 +249,7 @@ export default function EntryView() {
                 <CheckCircle2 size={18} style={{ color: "var(--color-lunas)" }} />
                 <strong style={{ color: "var(--color-lunas)", fontSize: 15 }}>Sudah Entry Bayar</strong>
               </div>
-              <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: "12px 14px", marginBottom: 12 }}>
+              <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: "14px 16px", marginBottom: 12 }}>
                 <div style={{ fontSize: 20, fontWeight: 900, color: "var(--color-lunas)", fontFamily: "monospace" }}>
                   {formatRp(sudahAda.total)}
                 </div>

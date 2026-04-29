@@ -63,7 +63,7 @@ export default function TagihanView() {
           { label: "Lunas", value: `${jumlahLunas}/${membersAktif.length}`, color: "var(--color-lunas)" },
           { label: "Belum", value: String(jumlahBelum), color: "var(--color-belum)" },
         ].map((s) => (
-          <div key={s.label} className="card" style={{ flex: 1, padding: "10px 8px", borderLeft: `3px solid ${s.color}` }}>
+          <div key={s.label} className="card" style={{ flex: 1, padding: "10px 12px", borderLeft: `3px solid ${s.color}` }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", marginBottom: 3 }}>{s.label}</div>
             <div style={{ fontSize: 14, fontWeight: 800, color: s.color, fontFamily: "JetBrains Mono, monospace", lineHeight: 1 }}>{s.value}</div>
           </div>
@@ -97,8 +97,8 @@ export default function TagihanView() {
             key={f}
             onClick={() => setFilter(f)}
             style={{
-              flex: 1, height: 36, borderRadius: 8, fontSize: 12, fontWeight: 700,
-              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+              flex: 1, height: 40, borderRadius: 8, fontSize: 12, fontWeight: 700,
+              border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
               background: filter === f ? "var(--color-primary)" : "var(--color-bg)",
               color: filter === f ? "#fff" : "var(--color-txt3)",
               outline: filter !== f ? "1px solid var(--color-border)" : "none",

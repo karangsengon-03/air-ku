@@ -123,7 +123,7 @@ export default function TarifSection({ settings, userRole, addToast, showConfirm
     <SettingsSection icon={<DollarSign size={18} />} title="Tarif Air" defaultOpen>
       <div style={{ paddingTop: 12 }}>
         {/* Current tariff display */}
-        <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+        <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: "14px 16px", marginBottom: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>Tarif Aktif</span>
             <span style={{ fontSize: 11, color: "var(--color-txt3)" }}>{displayBlok.length} Blok Pemakaian</span>
@@ -167,7 +167,7 @@ export default function TarifSection({ settings, userRole, addToast, showConfirm
                 const isLast = idx === bloks.length - 1;
                 const prevBatas = idx > 0 ? (parseInt(bloks[idx - 1].batasAtas) || 0) : 0;
                 return (
-                  <div key={idx} style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+                  <div key={idx} style={{ background: "var(--color-bg)", border: "1px solid var(--color-border)", borderRadius: 10, padding: "14px 16px", marginBottom: 8 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: "var(--color-primary)" }}>Blok {idx + 1}</span>
                       {idx >= 2 && (
