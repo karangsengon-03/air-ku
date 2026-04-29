@@ -7,7 +7,7 @@
  *   import type { Tagihan } from '@/types/tagihan'
  */
 
-export type { Role, MemberStatus, TagihanStatus, ModeTunggakan } from './common';
+export type { Role, MemberStatus, TagihanStatus, ModeTunggakan, FirestoreTs, FirestoreTimestampLike } from './common';
 export type { BlokTarif, AppSettings, HargaHistory }             from './settings';
 export {      defaultSettings }                                   from './settings';
 export type { Member }                                            from './member';
