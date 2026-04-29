@@ -64,7 +64,7 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
         </span>
         <div style={{ fontSize: 11, color: "var(--color-txt3)", textAlign: "right" }}>
           <div>Entry: {formatTanggal(t.tanggalEntry)}</div>
-          {lunas && (t.tanggalBayar as unknown) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
+          {lunas && Boolean(t.tanggalBayar) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
         </div>
       </div>
 
