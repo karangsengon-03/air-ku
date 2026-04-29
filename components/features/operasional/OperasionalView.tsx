@@ -51,10 +51,10 @@ export default function OperasionalView() {
   }
 
   return (
-    <div className="col-16 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
 
       {/* Bulan Picker */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <select
           className="input-field"
           style={{ flex: 2 }}
@@ -76,7 +76,7 @@ export default function OperasionalView() {
       </div>
 
       {/* Summary Card */}
-      <div className="card" style={{ padding: "16px 20px", marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="card" style={{ padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div className="section-label">Total Pengeluaran</div>
           <div className="mono" style={{ fontSize: 22, fontWeight: 700, color: "var(--color-belum)" }}>
@@ -96,7 +96,7 @@ export default function OperasionalView() {
       {isAdmin && (
         <button
           className="btn-primary"
-          style={{ width: "100%", marginBottom: 16 }}
+          style={{ width: "100%" }}
           onClick={() => setShowForm(true)}
         >
           <Plus size={18} /> Catat Pengeluaran

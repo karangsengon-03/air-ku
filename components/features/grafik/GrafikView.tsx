@@ -111,7 +111,7 @@ export default function GrafikView() {
   const noData = bulanData.every((d) => d.m3 === 0 && d.pendapatan === 0);
 
   return (
-    <div className="col-16 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
 
       {/* Navigasi Tahun */}
       <div className="flex items-center gap-2 mb-5">

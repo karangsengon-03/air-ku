@@ -57,7 +57,7 @@ export default function DashboardView() {
   const isCurrentMonth = activeBulan === now.getMonth() + 1 && activeTahun === now.getFullYear();
 
   return (
-    <div className="col-10 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
       {/* Offline banner */}
       {!isOnline && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, background: "rgba(146,64,14,0.1)", color: "var(--color-tunggakan)", fontSize: 13, fontWeight: 600 }}>

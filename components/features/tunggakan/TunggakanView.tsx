@@ -278,7 +278,7 @@ export default function TunggakanView() {
   }, [settings, activeBulan, activeTahun, groups, totalPelanggan, totalNominal]);
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
       {/* Info periode */}
       <div
         className="card p-3 mb-4 flex items-center gap-3"
@@ -297,7 +297,7 @@ export default function TunggakanView() {
 
       {/* Stat summary */}
       {!loading && tunggakan.length > 0 && (
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           <div className="card flex-1" style={{ borderLeft: "3px solid var(--color-tunggakan)", padding: "14px 10px" }}>
             <div className="section-label mb-1">Total Nominal</div>
             <div className="mono font-bold" style={{ color: "var(--color-tunggakan)", fontSize: 13 }}>

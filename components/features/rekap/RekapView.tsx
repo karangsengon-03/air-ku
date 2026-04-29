@@ -84,7 +84,7 @@ export default function RekapView() {
   const nextBulan = () => activeBulan === 12 ? setActiveBulanTahun(1, activeTahun + 1) : setActiveBulanTahun(activeBulan + 1, activeTahun);
 
   return (
-    <div className="col-16 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
 
       {/* Navigasi Bulan */}
       <div className="flex items-center gap-2 mb-4">

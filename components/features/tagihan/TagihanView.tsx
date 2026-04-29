@@ -49,7 +49,7 @@ export default function TagihanView() {
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
 
   return (
-    <div className="col-10 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
       {/* Header info */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "6px 0" }}>
         <Droplets size={16} style={{ color: "var(--color-primary)" }} />

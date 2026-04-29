@@ -108,7 +108,7 @@ export default function MembersView() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, paddingBottom: 80 }} className="animate-fade-in-up">
+    <div style={{ paddingBottom: 80 }} className="col-12 animate-fade-in-up">
 
       {/* Stat Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 6 }}>

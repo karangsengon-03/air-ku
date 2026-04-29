@@ -68,10 +68,10 @@ export default function LogView() {
   const hasActiveFilter = filterAction !== "semua" || filterTanggal || search;
 
   return (
-    <div className="col-16 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
 
       {/* Summary */}
-      <div className="card" style={{ padding: "14px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="card" style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div className="section-label">Log Tersimpan</div>
           <div className="mono" style={{ fontSize: 20, fontWeight: 700, color: "var(--color-primary)" }}>
@@ -90,7 +90,7 @@ export default function LogView() {
       </div>
 
       {/* Search + Filter toggle */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+      <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1, position: "relative" }}>
           <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--color-txt3)" }} />
           <input
@@ -124,7 +124,7 @@ export default function LogView() {
 
       {/* Filter Panel */}
       {showFilter && (
-        <div className="card" style={{ padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 14 }}>
+        <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
             <div className="section-label">Tanggal</div>
             <input

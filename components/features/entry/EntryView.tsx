@@ -173,7 +173,7 @@ export default function EntryView() {
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
 
   return (
-    <div className="col-10 animate-fade-in-up">
+    <div className="col-12 animate-fade-in-up">
 
       {/* Info mode */}
       <div style={{
