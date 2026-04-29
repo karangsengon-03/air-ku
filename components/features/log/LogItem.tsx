@@ -48,7 +48,9 @@ export function formatTimestamp(ts: FirestoreTs): string {
   if (!ts) return "-";
   try {
     let date: Date;
-    if (ts instanceof Timestamp) {
+    if (ts instanceof Date) {
+      date = ts;
+    } else if (ts instanceof Timestamp) {
       date = ts.toDate();
     } else if (typeof ts === "object" && ts !== null && "seconds" in ts) {
       date = new Timestamp((ts as { seconds: number }).seconds, 0).toDate();
@@ -68,7 +70,9 @@ export function getDateString(ts: FirestoreTs): string {
   if (!ts) return "";
   try {
     let date: Date;
-    if (ts instanceof Timestamp) {
+    if (ts instanceof Date) {
+      date = ts;
+    } else if (ts instanceof Timestamp) {
       date = ts.toDate();
     } else if (typeof ts === "object" && ts !== null && "seconds" in ts) {
       date = new Timestamp((ts as { seconds: number }).seconds, 0).toDate();
