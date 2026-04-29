@@ -16,4 +16,4 @@ export interface FirestoreTimestampLike {
   seconds: number;
   nanoseconds?: number;
 }
-export type FirestoreTs = Timestamp | FirestoreTimestampLike | null | undefined;
+export type FirestoreTs = Timestamp | FirestoreTimestampLike | Date | null | undefined;
