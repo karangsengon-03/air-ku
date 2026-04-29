@@ -41,11 +41,17 @@ export default function DashboardView() {
   }, [activeBulan, activeTahun]);
 
   const lunas = tagihan.filter((t) => t.status === "lunas");
-  const belum = tagihan.filter((t) => t.status === "belum");
+  const belumTagihan = tagihan.filter((t) => t.status === "belum");
+  const membersAktif = members.filter((m) => m.status === "aktif");
+  // Member aktif yang belum ada tagihan sama sekali bulan ini
+  const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
+  const membersBelumInput = membersAktif.filter((m) => m.id && !memberIdsDiinput.has(m.id));
+  // Total belum bayar = tagihan berstatus belum + yang belum diinput
+  const totalBelumCount = belumTagihan.length + membersBelumInput.length;
+  const totalBelumNominal = belumTagihan.reduce((s, t) => s + t.total, 0);
   const totalTerkumpul = lunas.reduce((s, t) => s + t.total, 0);
   const totalM3 = tagihan.reduce((s, t) => s + t.pemakaian, 0);
   const pendapatanBersih = totalTerkumpul - totalOps;
-  const membersAktif = members.filter((m) => m.status === "aktif");
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
   const now = new Date();
   const isCurrentMonth = activeBulan === now.getMonth() + 1 && activeTahun === now.getFullYear();
@@ -70,7 +76,7 @@ export default function DashboardView() {
               {formatRp(totalTerkumpul)}
             </div>
             <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4 }}>
-              {lunas.length} lunas · {belum.length} belum bayar
+              {lunas.length} lunas · {totalBelumCount} belum bayar
             </div>
             {totalOps > 0 && (
               <div style={{ fontSize: 12, color: "var(--color-txt3)", marginTop: 2 }}>
@@ -78,7 +84,7 @@ export default function DashboardView() {
               </div>
             )}
           </div>
-          <DonutChart lunas={lunas.length} belum={belum.length} />
+          <DonutChart lunas={lunas.length} belum={totalBelumCount} />
         </div>
       </div>
 
@@ -91,8 +97,8 @@ export default function DashboardView() {
         },
         {
           icon: <Clock size={18} />, color: "var(--color-belum)",
-          label: "Belum Bayar", value: `${belum.length} pelanggan`,
-          sub: belum.length > 0 ? `Rp ${belum.reduce((s, t) => s + t.total, 0).toLocaleString("id-ID")} belum terkumpul` : "Semua sudah lunas",
+          label: "Belum Bayar", value: `${totalBelumCount} pelanggan`,
+          sub: totalBelumCount > 0 ? `Rp ${totalBelumNominal.toLocaleString("id-ID")} belum terkumpul` : "Semua sudah lunas",
         },
         {
           icon: <Droplets size={18} />, color: "var(--color-accent)",

@@ -11,7 +11,7 @@ import TagihanCard from "./TagihanCard";
 type FilterStatus = "semua" | "lunas" | "belum";
 
 export default function TagihanView() {
-  const { tagihan, activeBulan, activeTahun, userRole, addToast, settings } = useAppStore();
+  const { tagihan, activeBulan, activeTahun, userRole, addToast, settings, members } = useAppStore();
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
 
@@ -29,7 +29,11 @@ export default function TagihanView() {
   });
 
   const jumlahLunas = tagihan.filter((t) => t.status === "lunas").length;
-  const jumlahBelum = tagihan.filter((t) => t.status === "belum").length;
+  const jumlahBelumTagihan = tagihan.filter((t) => t.status === "belum").length;
+  const membersAktif = members.filter((m) => m.status === "aktif");
+  const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
+  const membersBelumInput = membersAktif.filter((m) => m.id && !memberIdsDiinput.has(m.id)).length;
+  const jumlahBelum = jumlahBelumTagihan + membersBelumInput;
   const totalTerkumpul = tagihan.filter((t) => t.status === "lunas").reduce((s, t) => s + t.total, 0);
 
   const handleShare = async (t: Tagihan) => {
@@ -56,7 +60,7 @@ export default function TagihanView() {
       <div className="row-8">
         {[
           { label: "Terkumpul", value: formatRp(totalTerkumpul), color: "var(--color-primary)" },
-          { label: "Lunas", value: `${jumlahLunas}/${tagihan.length}`, color: "var(--color-lunas)" },
+          { label: "Lunas", value: `${jumlahLunas}/${membersAktif.length}`, color: "var(--color-lunas)" },
           { label: "Belum", value: String(jumlahBelum), color: "var(--color-belum)" },
         ].map((s) => (
           <div key={s.label} className="card" style={{ flex: 1, padding: "10px 8px", borderLeft: `3px solid ${s.color}` }}>
