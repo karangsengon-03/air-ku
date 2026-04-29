@@ -172,7 +172,7 @@ export default function LogView() {
           <div style={{ color: "var(--color-txt3)" }}>Belum ada aktivitas tercatat.</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card" className="empty-state-lg">
+        <div className="card empty-state-lg">
           Tidak ada log sesuai filter.
           {hasActiveFilter && (
             <button className="btn-ghost" style={{ margin: "10px auto 0", color: "var(--color-primary)" }} onClick={clearFilter}>

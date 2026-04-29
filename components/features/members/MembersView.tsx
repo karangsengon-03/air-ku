@@ -256,7 +256,7 @@ export default function MembersView() {
           <div style={{ color: "var(--color-txt3)", fontSize: 15 }}>Belum ada pelanggan.</div>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="card" className="empty-state-lg">
+        <div className="card empty-state-lg">
           Tidak ada pelanggan yang sesuai.
         </div>
       ) : (
