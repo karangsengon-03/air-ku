@@ -181,7 +181,7 @@ export default function Header({ title }: HeaderProps) {
 
       {/* Baris 2: judul halaman + periode picker */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 8, gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="flex-min">
           <div style={{ fontSize: 17, fontWeight: 800, color: "var(--color-txt)" }}>{title}</div>
         </div>
 

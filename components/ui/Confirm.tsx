@@ -23,7 +23,7 @@ export default function Confirm() {
           <p style={{ fontSize: 17, fontWeight: 700, color: "var(--color-txt)" }}>{confirm.title}</p>
         </div>
         <p style={{ fontSize: 14, color: "var(--color-txt2)", lineHeight: 1.6, marginBottom: 20 }}>{confirm.message}</p>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div className="row-10">
           <button onClick={closeConfirm} className="btn-secondary" style={{ flex: 1, height: 48 }}>
             Batal
           </button>

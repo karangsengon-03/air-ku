@@ -1,7 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
 
-const DashboardView = dynamic(() => import("@/components/views/DashboardView"), {
+const DashboardView = dynamic(() => import("@/components/features/dashboard/DashboardView"), {
   ssr: false,
 });
 

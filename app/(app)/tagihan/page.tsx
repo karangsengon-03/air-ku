@@ -1,4 +1,4 @@
-import TagihanView from "@/components/views/TagihanView";
+import TagihanView from "@/components/features/tagihan/TagihanView";
 
 export default function TagihanPage() {
   return <TagihanView />;
