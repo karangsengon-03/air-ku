@@ -1,7 +1,7 @@
 /**
  * common.ts — Tipe primitif, enum, dan konstanta bersama
  */
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type Role           = 'admin' | 'penagih';
 export type MemberStatus   = 'aktif' | 'nonaktif' | 'pindah';
@@ -16,4 +16,4 @@ export interface FirestoreTimestampLike {
   seconds: number;
   nanoseconds?: number;
 }
-export type FirestoreTs = Timestamp | FirestoreTimestampLike | Date | null | undefined;
+export type FirestoreTs = Timestamp | FirestoreTimestampLike | FieldValue | Date | null | undefined;
