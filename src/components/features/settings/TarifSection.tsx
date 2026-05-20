@@ -180,16 +180,23 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       <div>
                         <label className="section-label">Dari (m³)</label>
-                        <input className="input-field mono" value={idx === 0 ? "0" : String(prevBatas)} disabled
-                          style={{ background: "var(--color-border)", fontSize: 14, height: 44 }} />
+                        <div className="input-field mono" style={{ fontSize: 14, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
+                          {idx === 0 ? "0" : String(prevBatas)}
+                        </div>
                       </div>
                       <div>
                         <label className="section-label">{isLast ? "Sampai (∞)" : "Sampai (m³)"}</label>
-                        <input className="input-field mono" inputMode="numeric"
-                          value={isLast ? "∞" : blok.batasAtas} disabled={isLast}
-                          style={isLast ? { background: "var(--color-border)", fontSize: 14, height: 44 } : { fontSize: 14, height: 44 }}
-                          onChange={(e) => updateBlok(idx, "batasAtas", e.target.value.replace(/\D/g, ""))}
-                          placeholder="cth: 10" />
+                        {isLast ? (
+                          <div className="input-field mono" style={{ fontSize: 14, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
+                            ∞
+                          </div>
+                        ) : (
+                          <input className="input-field mono" inputMode="numeric"
+                            value={blok.batasAtas}
+                            style={{ fontSize: 14, height: 44 }}
+                            onChange={(e) => updateBlok(idx, "batasAtas", e.target.value.replace(/\D/g, ""))}
+                            placeholder="cth: 10" />
+                        )}
                       </div>
                     </div>
                     <div style={{ marginTop: 8 }}>

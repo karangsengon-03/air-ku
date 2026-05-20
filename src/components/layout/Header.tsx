@@ -9,9 +9,6 @@ import { db, auth } from "@/lib/firebase";
 import { signOut } from "firebase/auth";
 import { maskEmail } from "@/lib/masking";
 
-const SAVED_EMAIL_KEY = "airku_saved_email";
-const SAVED_PW_KEY = "airku_saved_pw";
-
 interface HeaderProps {
   title: string;
 }
@@ -51,20 +48,6 @@ export default function Header({ title }: HeaderProps) {
       "Keluar dari Aplikasi",
       `Yakin ingin keluar dari akun ${userRole?.email || ""}?\nEmail dan kata sandi akan tetap tersimpan.`,
       async () => { await signOut(auth); }
-    );
-  };
-
-  const handleLogoutForget = () => {
-    setShowUserMenu(false);
-    showConfirm(
-      "Keluar & Hapus Akun Tersimpan",
-      "Email dan kata sandi tersimpan akan dihapus. Login berikutnya harus ketik manual.",
-      async () => {
-        localStorage.removeItem(SAVED_EMAIL_KEY);
-        localStorage.removeItem(SAVED_PW_KEY);
-        await signOut(auth);
-      },
-      true
     );
   };
 
@@ -173,14 +156,6 @@ export default function Header({ title }: HeaderProps) {
                       display: "flex", alignItems: "center", gap: 8,
                     }}>
                       <LogOut size={15} /> Keluar
-                    </button>
-                    <button onClick={handleLogoutForget} style={{
-                      width: "100%", padding: "8px 12px", borderRadius: 8, border: "none",
-                      background: "none", cursor: "pointer", textAlign: "left",
-                      fontSize: 13, fontWeight: 600, color: "var(--color-txt3)",
-                      display: "flex", alignItems: "center", gap: 8,
-                    }}>
-                      <LogOut size={13} /> Keluar &amp; hapus akun tersimpan
                     </button>
                   </div>
                 </>
