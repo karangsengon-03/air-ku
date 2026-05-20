@@ -1,7 +1,6 @@
 "use client";
 import { useEffect } from "react";
 import { AlertTriangle } from "lucide-react";
-import * as Sentry from "@sentry/nextjs";
 
 export default function GlobalError({
   error,
@@ -11,12 +10,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Kirim error ke Sentry jika DSN dikonfigurasi, fallback ke console
-    if (process.env.NEXT_PUBLIC_SENTRY_DSN) {
-      Sentry.captureException(error);
-    } else {
-      console.error("[AirKu Error]", error);
-    }
+    console.error("[AirKu Error]", error);
   }, [error]);
 
   return (

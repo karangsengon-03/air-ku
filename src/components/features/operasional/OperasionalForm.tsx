@@ -8,6 +8,7 @@ import { formatRp } from "@/lib/helpers";
 import { handleFirebaseError } from "@/lib/firebase-errors";
 import { operasionalSchema, OperasionalFormValues } from "@/schemas";
 import { toast } from "@/lib/toast";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 interface OperasionalFormProps {
   onClose: () => void;
@@ -32,6 +33,7 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
     },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchedNominal = watch("nominal");
 
   function handleNominalChange(raw: string) {
@@ -74,10 +76,11 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
   };
 
   return (
+    <ModalPortal>
     <div
       onClick={() => onClose()}
       style={{
-        position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 50,
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200,
         display: "flex", alignItems: "flex-start", justifyContent: "center",
         overflowY: "auto", padding: "40px 16px 40px",
       }}
@@ -161,5 +164,6 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }

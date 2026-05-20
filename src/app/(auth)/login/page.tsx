@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, browserLocalPersistence, setPersistence } from "firebase/auth";
@@ -14,12 +15,21 @@ import { loginSchema, LoginFormValues } from "@/schemas";
 const SAVED_EMAIL_KEY = "airku_saved_email";
 const SAVED_PW_KEY = "airku_saved_pw";
 
+function getSavedCredentials() {
+  if (typeof window === "undefined") return { email: null, pw: null };
+  return {
+    email: localStorage.getItem(SAVED_EMAIL_KEY),
+    pw: localStorage.getItem(SAVED_PW_KEY),
+  };
+}
+
 export default function LoginPage() {
   const { firebaseUser, authLoading } = useAppStore();
   const router = useRouter();
 
-  const [savedEmail, setSavedEmail] = useState<string | null>(null);
-  const [savedPw, setSavedPw] = useState<string | null>(null);
+  const saved = getSavedCredentials();
+  const [savedEmail] = useState<string | null>(saved.email);
+  const [savedPw] = useState<string | null>(saved.pw);
   const [useGantiAkun, setGantiAkun] = useState(false);
   const [showPw, setShowPw] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -31,17 +41,8 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { email: saved.email ?? "", password: saved.pw ?? "" },
   });
-
-  // Load saved credentials on mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const em = localStorage.getItem(SAVED_EMAIL_KEY);
-    const pw = localStorage.getItem(SAVED_PW_KEY);
-    if (em) { setSavedEmail(em); setValue("email", em); }
-    if (pw) { setSavedPw(pw); setValue("password", pw); }
-  }, [setValue]);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -89,7 +90,7 @@ export default function LoginPage() {
     }}>
       {/* Logo */}
       <div style={{ marginBottom: 32, textAlign: "center" }}>
-        <img
+        <Image
           src="/icons/icon-192.png"
           alt={APP_NAME}
           width={80}

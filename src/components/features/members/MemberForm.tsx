@@ -10,6 +10,7 @@ import { STATUS_LABEL, STATUS_COLOR, STATUS_BG } from "./MemberCard";
 import { handleFirebaseError } from "@/lib/firebase-errors";
 import { memberSchema, MemberFormValues } from "@/schemas";
 import { toast } from "@/lib/toast";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 interface MemberFormProps {
   editTarget: Member | null;
@@ -28,8 +29,8 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
     setValue,
     setError,
     formState: { errors, isSubmitting },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<MemberFormValues>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(memberSchema) as any,
     defaultValues: editTarget
       ? {
@@ -47,6 +48,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         },
   });
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const watchedDusun = watch("dusun");
   const watchedStatus = watch("status");
   const watchedRt = watch("rt");
@@ -128,6 +130,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
   };
 
   return (
+    <ModalPortal>
     <div
       onClick={onClose}
       style={{
@@ -269,5 +272,6 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         </form>
       </div>
     </div>
+    </ModalPortal>
   );
 }

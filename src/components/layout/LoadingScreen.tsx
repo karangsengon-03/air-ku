@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
 
 export default function LoadingScreen() {
@@ -13,7 +14,7 @@ export default function LoadingScreen() {
       background: "var(--color-primary)",
       gap: 20,
     }}>
-      <img
+      <Image
         src="/icons/icon-192.png"
         alt={APP_NAME}
         width={140}

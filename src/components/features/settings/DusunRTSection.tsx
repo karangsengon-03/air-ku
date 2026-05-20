@@ -1,10 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { MapPin, Plus, Edit2, Trash2, ChevronDown, ChevronUp, X } from "lucide-react";
 import { updateSettings } from "@/lib/db";
 import { AppSettings } from "@/types";
 import SettingsSection from "./SettingsSection";
 import { toast } from "@/lib/toast";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 // ── ModalInput
 function ModalInput({
@@ -16,6 +17,7 @@ function ModalInput({
   const [val, setVal] = React.useState(initialValue);
   const handleSave = () => { const t = val.trim(); if (!t) return; onSave(t); };
   return (
+    <ModalPortal>
     <div
       onClick={onClose}
       style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px 20px" }}
@@ -38,6 +40,7 @@ function ModalInput({
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }
 

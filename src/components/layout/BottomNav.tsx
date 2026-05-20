@@ -42,6 +42,7 @@ export default function BottomNav() {
   const activeInMore = isAdmin && adminMoreNav.some((m) => pathname === m.href);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShowMore(false);
   }, [pathname]);
 

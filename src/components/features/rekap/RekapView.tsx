@@ -49,9 +49,11 @@ export default function RekapView() {
   // #20 Fix: AbortController cleanup untuk mencegah state update setelah unmount
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData(controller.signal);
     return () => controller.abort();
   }, [fetchData]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setFilterDusun("__semua__"); setFilterRT("__semua__"); }, [activeBulan, activeTahun]);
 
   const dusunList = Array.from(new Set(rows.map((r) => r.dusun).filter(Boolean))).sort();
@@ -73,7 +75,7 @@ export default function RekapView() {
   const pendapatanBersih = totalTerkumpul - totalOps;
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
 
-  const handleExportPdf = useCallback(async () => {
+  const handleExportPdf = async () => {
     if (filtered.length === 0) { toast.info("Tidak ada data."); return; }
     setPdfLoading(true);
     try {
@@ -81,13 +83,13 @@ export default function RekapView() {
       toast.success("PDF berhasil diunduh.");
     } catch { toast.error("Gagal membuat PDF."); }
     finally { setPdfLoading(false); }
-  }, [filtered, bulanLabel, settings, totalOps]);
+  };
 
-  const handleShareWa = useCallback(() => {
+  const handleShareWa = () => {
     const text = buildWaKolektif(filtered, bulanLabel, settings.namaOrganisasi);
     if (!text) { toast.info("Semua pelanggan sudah lunas!"); return; }
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
-  }, [filtered, bulanLabel, settings.namaOrganisasi]);
+  };
 
   const prevBulan = () => activeBulan === 1 ? setActiveBulanTahun(12, activeTahun - 1) : setActiveBulanTahun(activeBulan - 1, activeTahun);
   const nextBulan = () => activeBulan === 12 ? setActiveBulanTahun(1, activeTahun + 1) : setActiveBulanTahun(activeBulan + 1, activeTahun);

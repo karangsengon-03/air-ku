@@ -12,7 +12,7 @@ import TagihanCard from "./TagihanCard";
 type FilterStatus = "semua" | "lunas" | "belum";
 
 export default function TagihanView() {
-  const { tagihan, activeBulan, activeTahun, userRole, settings, members } = useAppStore();
+  const { tagihan, activeBulan, activeTahun, settings, members } = useAppStore();
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
 

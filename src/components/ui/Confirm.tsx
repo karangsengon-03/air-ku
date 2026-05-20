@@ -1,6 +1,7 @@
 "use client";
 import { AlertTriangle } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 export default function Confirm() {
   const { confirm, closeConfirm } = useAppStore();
@@ -12,6 +13,7 @@ export default function Confirm() {
   };
 
   return (
+    <ModalPortal>
     <div style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)",
       zIndex: 9000, display: "flex", alignItems: "center", justifyContent: "center",
@@ -37,5 +39,6 @@ export default function Confirm() {
         </div>
       </div>
     </div>
+    </ModalPortal>
   );
 }

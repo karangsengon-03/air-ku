@@ -16,6 +16,7 @@ export default function InfoOrganisasiSection({ settings }: { settings: AppSetti
 
   useEffect(() => {
     if (!editing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setNamaOrg(settings.namaOrganisasi);
       setDesa(settings.desa);
       setKecamatan(settings.kecamatan);

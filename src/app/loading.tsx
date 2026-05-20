@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { APP_NAME } from "@/lib/constants";
 
 /**
@@ -18,7 +19,7 @@ export default function GlobalLoading() {
         gap: "20px",
       }}
     >
-      <img
+      <Image
         src="/icons/icon-192.png"
         alt={APP_NAME}
         width={100}

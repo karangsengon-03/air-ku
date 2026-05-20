@@ -41,12 +41,13 @@ export default function TunggakanView() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [activeBulan, activeTahun]
+    [activeBulan, activeTahun, firebaseUser]
   );
 
   // #20 Fix: AbortController cleanup untuk mencegah state update setelah unmount
   useEffect(() => {
     const controller = new AbortController();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTunggakan(controller.signal);
     return () => controller.abort();
   }, [fetchTunggakan]);

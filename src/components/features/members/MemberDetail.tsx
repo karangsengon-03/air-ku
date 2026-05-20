@@ -3,6 +3,7 @@ import { X } from "lucide-react";
 import { Member, Tagihan } from "@/types";
 import { formatRp } from "@/lib/helpers";
 import { STATUS_LABEL, STATUS_COLOR, STATUS_BG } from "./MemberCard";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 const BULAN_LABEL = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 
@@ -15,6 +16,7 @@ interface MemberDetailProps {
 
 export default function MemberDetail({ member: m, riwayat, loading, onClose }: MemberDetailProps) {
   return (
+    <ModalPortal>
     <div
       onClick={onClose}
       style={{
@@ -96,5 +98,6 @@ export default function MemberDetail({ member: m, riwayat, loading, onClose }: M
         </button>
       </div>
     </div>
+    </ModalPortal>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { DollarSign, Plus, Trash2, Edit2, History } from "lucide-react";
-import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
 import { formatRp, formatTanggal } from "@/lib/helpers";
 import { updateSettings, saveHargaHistory, getHargaHistoryList, saveActivityLog } from "@/lib/db";
@@ -33,8 +32,9 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
   const [bloks, setBloks] = useState<{ batasAtas: string; harga: string }[]>(initBlok);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!editing) { setAbonemen(String(settings.abonemen)); setBloks(initBlok()); }
-  }, [settings, editing]);
+  }, [settings, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const updateBlok = (idx: number, field: "batasAtas" | "harga", val: string) => {
     setBloks((prev) => prev.map((b, i) => i === idx ? { ...b, [field]: val } : b));

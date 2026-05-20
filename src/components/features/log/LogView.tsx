@@ -27,6 +27,7 @@ export default function LogView() {
 
   // Listener 500 log terbaru
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const unsub = listenActivityLog((data) => {
       setLogs(data);

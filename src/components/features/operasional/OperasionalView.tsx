@@ -21,6 +21,7 @@ export default function OperasionalView() {
   const total = useMemo(() => list.reduce((s, o) => s + (o.nominal || 0), 0), [list]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     const unsub = listenOperasional(activeBulan, activeTahun, (data) => {
       setList(data);

@@ -11,6 +11,7 @@ import MemberForm from "./MemberForm";
 import MemberDetail from "./MemberDetail";
 import MembersFilter from "./MembersFilter";
 import MembersSort, { SortKey, SORT_LABELS } from "./MembersSort";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 export default function MembersView() {
   const { members, settings, firebaseUser, userRole, showConfirm } = useAppStore();
@@ -194,28 +195,30 @@ export default function MembersView() {
         </div>
       )}
 
-      {/* FAB Tambah Pelanggan */}
+      {/* FAB Tambah Pelanggan — portal ke body agar keluar dari overflow:hidden app-shell */}
       {isAdmin && (
-        <button
-          onClick={() => { setEditTarget(null); setModalOpen(true); }}
-          style={{
-            position: "fixed",
-            bottom: "calc(var(--nav-height) + 16px)",
-            right: 20,
-            width: 56, height: 56,
-            borderRadius: "50%",
-            background: "var(--color-primary)",
-            color: "white",
-            border: "none",
-            cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 20px rgba(3,105,161,0.45)",
-            zIndex: 50,
-          }}
-          title="Tambah Pelanggan"
-        >
-          <Plus size={26} strokeWidth={2.5} />
-        </button>
+        <ModalPortal>
+          <button
+            onClick={() => { setEditTarget(null); setModalOpen(true); }}
+            style={{
+              position: "fixed",
+              bottom: "calc(var(--nav-height) + 16px)",
+              right: 20,
+              width: 56, height: 56,
+              borderRadius: "50%",
+              background: "var(--color-primary)",
+              color: "white",
+              border: "none",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              boxShadow: "0 4px 20px rgba(3,105,161,0.45)",
+              zIndex: 50,
+            }}
+            title="Tambah Pelanggan"
+          >
+            <Plus size={26} strokeWidth={2.5} />
+          </button>
+        </ModalPortal>
       )}
 
       {/* Modal Tambah / Edit */}
