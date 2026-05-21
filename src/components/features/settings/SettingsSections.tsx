@@ -176,9 +176,6 @@ export function LogoutSection({ showConfirm }: {
             await saveActivityLog("logout", `Logout: ${userRole.email}`, userRole.email, userRole.role);
           }
           await signOut(auth);
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("airku_saved_pw");
-          }
         } catch (e) { console.error(e); }
       },
       true
@@ -199,7 +196,7 @@ export function LogoutSection({ showConfirm }: {
         }}
       >
         <LogOut size={18} />
-        Keluar &amp; hapus akun tersimpan
+        Keluar
       </button>
     </div>
   );
