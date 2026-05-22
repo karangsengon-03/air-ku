@@ -147,7 +147,7 @@ export default function TunggakanView() {
             className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
             style={{ borderColor: "var(--color-tunggakan)" }}
           />
-          <p style={{ color: "var(--color-txt3)", fontSize: 14 }}>Memuat data tunggakan…</p>
+          <p style={{ color: "var(--color-txt3)", fontSize: 13 }}>Memuat data tunggakan…</p>
         </div>
       )}
 

@@ -24,7 +24,7 @@ export default function Confirm() {
           <AlertTriangle size={22} color={confirm.danger ? "var(--color-belum)" : "var(--color-tunggakan)"} />
           <p style={{ fontSize: 17, fontWeight: 700, color: "var(--color-txt)" }}>{confirm.title}</p>
         </div>
-        <p style={{ fontSize: 14, color: "var(--color-txt2)", lineHeight: 1.6, marginBottom: 20 }}>{confirm.message}</p>
+        <p style={{ fontSize: 13, color: "var(--color-txt2)", lineHeight: 1.6, marginBottom: 20 }}>{confirm.message}</p>
         <div className="row-10">
           <button onClick={closeConfirm} className="btn-secondary" style={{ flex: 1, height: 48 }}>
             Batal

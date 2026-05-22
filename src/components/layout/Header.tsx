@@ -55,21 +55,19 @@ export default function Header({ title }: HeaderProps) {
     <header style={{
       background: "var(--color-card)",
       borderBottom: "1px solid var(--color-border)",
-      padding: "0 12px",
+      padding: "env(safe-area-inset-top, 8px) 12px 0",
       position: "sticky", top: 0, zIndex: 40,
     }}>
       {/* Baris 1: app name + ikon aksi */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 48 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 48 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Droplets size={18} style={{ color: "var(--color-primary)", flexShrink: 0 }} />
+          <Droplets size={28} style={{ color: "var(--color-primary)", flexShrink: 0 }} />
           <div>
             <div style={{ display: "flex", alignItems: "baseline", gap: 5 }}>
               <span style={{ fontSize: 16, fontWeight: 800, color: "var(--color-primary)" }}>{APP_NAME}</span>
-              {/* #33 Fix: version 10px → 13px */}
-              <span style={{ fontSize: 13, color: "var(--color-txt3)", fontWeight: 500 }}>v{APP_VERSION}</span>
+              <span style={{ fontSize: 11, color: "var(--color-txt3)", fontWeight: 500 }}>v{APP_VERSION}</span>
             </div>
-            {/* #2 Fix: orgName 11px → 13px */}
-            <div style={{ fontSize: 13, color: "var(--color-txt3)", fontWeight: 500, marginTop: -1 }}>{orgName}</div>
+            <div style={{ fontSize: 11, color: "var(--color-txt3)", fontWeight: 500, marginTop: -1 }}>{orgName}</div>
           </div>
         </div>
 
@@ -80,8 +78,7 @@ export default function Header({ title }: HeaderProps) {
             color: isOnline ? "var(--color-lunas)" : "var(--color-belum)",
           }}>
             {isOnline ? <Wifi size={16} /> : <WifiOff size={16} />}
-            {/* #2 Fix: 9px → 13px */}
-            <span style={{ fontSize: 13, fontWeight: 700, marginTop: 1 }}>{isOnline ? "Online" : "Offline"}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, marginTop: 1 }}>{isOnline ? "Online" : "Offline"}</span>
           </div>
 
           {/* Kunci — admin only */}
@@ -92,8 +89,7 @@ export default function Header({ title }: HeaderProps) {
               color: settings.globalLock ? "var(--color-belum)" : "var(--color-txt3)",
             }}>
               {settings.globalLock ? <Lock size={16} /> : <Unlock size={16} />}
-              {/* #2 Fix: 9px → 13px */}
-              <span style={{ fontSize: 13, fontWeight: 700, marginTop: 1 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, marginTop: 1 }}>
                 {settings.globalLock ? "Terkunci" : "Kunci"}
               </span>
             </button>
@@ -105,8 +101,7 @@ export default function Header({ title }: HeaderProps) {
             background: "none", border: "none", cursor: "pointer", color: "var(--color-txt3)",
           }}>
             {darkMode ? <Sun size={16} /> : <Moon size={16} />}
-            {/* #2 Fix: 9px → 13px */}
-            <span style={{ fontSize: 13, fontWeight: 700, marginTop: 1 }}>{darkMode ? "Terang" : "Gelap"}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, marginTop: 1 }}>{darkMode ? "Terang" : "Gelap"}</span>
           </button>
 
           {/* Keluar — semua role */}
@@ -121,8 +116,7 @@ export default function Header({ title }: HeaderProps) {
                 }}
               >
                 <LogOut size={16} />
-                {/* #2 Fix: 9px → 13px */}
-                <span style={{ fontSize: 13, fontWeight: 700, marginTop: 1 }}>Keluar</span>
+                <span style={{ fontSize: 11, fontWeight: 700, marginTop: 1 }}>Keluar</span>
               </button>
 
               {showUserMenu && (
@@ -136,12 +130,10 @@ export default function Header({ title }: HeaderProps) {
                   }}>
                     {/* Info akun */}
                     <div style={{ padding: "6px 10px 10px", borderBottom: "1px solid var(--color-border)", marginBottom: 6 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt)" }}>{userRole.nama}</div>
-                      {/* #2 Fix: email 11px → 13px | #6 Fix: maskEmail */}
+                      <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-txt)" }}>{userRole.nama}</div>
                       <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>{maskEmail(userRole.email)}</div>
-                      {/* #2 Fix: role badge 10px → 13px */}
                       <div style={{
-                        display: "inline-block", marginTop: 4, fontSize: 13, fontWeight: 700,
+                        display: "inline-block", marginTop: 4, fontSize: 11, fontWeight: 700,
                         padding: "2px 8px", borderRadius: 20,
                         background: userRole.role === "admin" ? "rgba(3,105,161,0.12)" : "rgba(21,128,61,0.12)",
                         color: userRole.role === "admin" ? "var(--color-primary)" : "var(--color-lunas)",
@@ -191,7 +183,6 @@ export default function Header({ title }: HeaderProps) {
                 borderRadius: 16, zIndex: 101, boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
                 padding: 10, minWidth: 210,
               }}>
-                {/* #2 Fix: 11px → 13px */}
                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt3)", padding: "2px 6px 8px", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                   Pilih Periode
                 </div>
@@ -199,11 +190,9 @@ export default function Header({ title }: HeaderProps) {
                   {Array.from({ length: 12 }, (_, i) => i + 1).map((bln) => (
                     <button key={bln} onClick={() => { setActiveBulanTahun(bln, activeTahun); setShowPicker(false); }}
                       style={{
-                        /* #3 Fix: min touch target */
                         padding: "7px 2px", minHeight: 36, borderRadius: 8, fontSize: 13, fontWeight: 600,
                         border: "none", cursor: "pointer",
                         background: bln === activeBulan ? "var(--color-primary)" : "var(--color-bg)",
-                        /* #15 Fix: #fff → white */
                         color: bln === activeBulan ? "white" : "var(--color-txt2)",
                       }}>
                       {MONTHS[bln - 1].slice(0, 3)}
@@ -217,7 +206,6 @@ export default function Header({ title }: HeaderProps) {
                         flex: 1, minWidth: 48, padding: "7px 4px", borderRadius: 8,
                         fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
                         background: yr === activeTahun ? "var(--color-primary)" : "var(--color-bg)",
-                        /* #15 Fix: #fff → white */
                         color: yr === activeTahun ? "white" : "var(--color-txt2)",
                       }}>
                       {yr}

@@ -148,7 +148,7 @@ export default function OperasionalView() {
             background: "rgba(185,28,28,0.07)", border: "1.5px solid rgba(185,28,28,0.2)",
             display: "flex", justifyContent: "space-between", alignItems: "center",
           }}>
-            <span style={{ fontWeight: 700, fontSize: 14 }}>Total {list.length} pengeluaran</span>
+            <span style={{ fontWeight: 700, fontSize: 13 }}>Total {list.length} pengeluaran</span>
             <span className="mono" style={{ fontWeight: 800, fontSize: 16, color: "var(--color-belum)" }}>
               {formatRp(total)}
             </span>

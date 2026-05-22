@@ -142,8 +142,8 @@ export default function DashboardView() {
 
       {/* Hint entry jika ada member tapi belum ada tagihan bulan ini */}
       {tagihan.length === 0 && membersAktif.length > 0 && isCurrentMonth && (
-        <div style={{ textAlign: "center", padding: "16px 0", color: "var(--color-txt3)" }}>
-          <p style={{ fontSize: 13 }}>Belum ada iuran tercatat untuk {bulanLabel}</p>
+        <div style={{ textAlign: "center", color: "var(--color-txt3)" }}>
+          <p style={{ fontSize: 13, margin: 0 }}>Belum ada iuran tercatat untuk {bulanLabel}</p>
         </div>
       )}
     </div>

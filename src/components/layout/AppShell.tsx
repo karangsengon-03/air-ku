@@ -95,7 +95,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Toaster
           position="top-center"
           toastOptions={{
-            style: { fontSize: 14, fontWeight: 500 },
+            style: { fontSize: 13, fontWeight: 500 },
             duration: 3500,
           }}
         />

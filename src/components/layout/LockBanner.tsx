@@ -15,7 +15,7 @@ export default function LockBanner() {
       display: "flex",
       alignItems: "center",
       gap: 8,
-      fontSize: 14,
+      fontSize: 13,
       fontWeight: 600,
     }}>
       <Lock size={16} />

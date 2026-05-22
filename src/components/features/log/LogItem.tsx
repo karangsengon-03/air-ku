@@ -111,7 +111,7 @@ export default function LogItem({ log, index, currentUserEmail }: LogItemProps) 
         <ActionIcon name={meta.icon} color={meta.color} />
         <div className="flex-min">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-            <span style={{ fontWeight: 700, fontSize: 14, color: meta.color }}>{meta.label}</span>
+            <span style={{ fontWeight: 700, fontSize: 13, color: meta.color }}>{meta.label}</span>
             <span style={{ fontSize: 13, color: "var(--color-txt3)", whiteSpace: "nowrap", flexShrink: 0 }}>
               {formatTimestamp(log.ts)}
             </span>

@@ -130,7 +130,7 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, paddingBottom: 8, borderBottom: "1px solid var(--color-border)" }}>
             <span style={{ fontSize: 13, color: "var(--color-txt2)" }}>Abonemen/bulan</span>
-            <span className="mono" style={{ fontSize: 14, fontWeight: 700, color: "var(--color-txt)" }}>{formatRp(settings.abonemen)}</span>
+            <span className="mono" style={{ fontSize: 15, fontWeight: 700, color: "var(--color-txt)" }}>{formatRp(settings.abonemen)}</span>
           </div>
           {displayBlok.map((blok, idx) => {
             const prevBatas = idx > 0 ? (displayBlok[idx - 1].batasAtas as number) : 0;
@@ -180,20 +180,20 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                       <div>
                         <label className="section-label">Dari (m³)</label>
-                        <div className="input-field mono" style={{ fontSize: 14, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
+                        <div className="input-field mono" style={{ fontSize: 13, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
                           {idx === 0 ? "0" : String(prevBatas)}
                         </div>
                       </div>
                       <div>
                         <label className="section-label">{isLast ? "Sampai (∞)" : "Sampai (m³)"}</label>
                         {isLast ? (
-                          <div className="input-field mono" style={{ fontSize: 14, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
+                          <div className="input-field mono" style={{ fontSize: 13, height: 44, display: "flex", alignItems: "center", color: "var(--color-txt3)", userSelect: "none" }}>
                             ∞
                           </div>
                         ) : (
                           <input className="input-field mono" inputMode="numeric"
                             value={blok.batasAtas}
-                            style={{ fontSize: 14, height: 44 }}
+                            style={{ fontSize: 13, height: 44 }}
                             onChange={(e) => updateBlok(idx, "batasAtas", e.target.value.replace(/\D/g, ""))}
                             placeholder="cth: 10" />
                         )}

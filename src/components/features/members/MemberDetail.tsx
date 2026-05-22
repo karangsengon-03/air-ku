@@ -61,7 +61,7 @@ export default function MemberDetail({ member: m, riwayat, loading, onClose }: M
         </div>
 
         <div style={{ height: 1, background: "var(--color-border)", marginBottom: 14 }} />
-        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>Riwayat Tagihan</div>
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Riwayat Tagihan</div>
 
         {loading ? (
           <div style={{ textAlign: "center", padding: 24, color: "var(--color-txt3)" }}>Memuat…</div>
@@ -78,7 +78,7 @@ export default function MemberDetail({ member: m, riwayat, loading, onClose }: M
                 display: "flex", justifyContent: "space-between", alignItems: "center",
               }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: 14 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>
                     {BULAN_LABEL[t.bulan]} {t.tahun}
                   </div>
                   <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>

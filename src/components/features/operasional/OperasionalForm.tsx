@@ -116,7 +116,7 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
             <div style={{ position: "relative" }}>
               <span style={{
                 position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)",
-                fontWeight: 600, color: "var(--color-txt3)", fontSize: 14,
+                fontWeight: 600, color: "var(--color-txt3)", fontSize: 13,
               }}>Rp</span>
               <input
                 id="ops-nominal"
@@ -147,7 +147,7 @@ export default function OperasionalForm({ onClose }: OperasionalFormProps) {
           {errors.root && (
             <div style={{
               background: "rgba(185,28,28,0.1)", border: "1px solid var(--color-belum)",
-              borderRadius: 8, padding: "10px 14px", fontSize: 14, color: "var(--color-belum)",
+              borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "var(--color-belum)",
             }}>
               {errors.root.message}
             </div>

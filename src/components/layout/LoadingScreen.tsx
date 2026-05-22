@@ -23,7 +23,7 @@ export default function LoadingScreen() {
       />
       {/* #15 Fix: #fff → white */}
       <p style={{ fontSize: 24, fontWeight: 800, color: "white", letterSpacing: "-0.3px", margin: 0 }}>{APP_NAME}</p>
-      <p style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", margin: 0 }}>Memuat…</p>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", margin: 0 }}>Memuat…</p>
     </div>
   );
 }

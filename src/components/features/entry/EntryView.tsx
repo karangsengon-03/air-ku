@@ -226,7 +226,7 @@ export default function EntryView() {
           {/* Info pelanggan terpilih */}
           <div className="card" style={{ padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>{selectedMember.nama}</p>
+              <p style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>{selectedMember.nama}</p>
               <p style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>
                 No. {selectedMember.nomorSambungan} · {selectedMember.dusun} RT {selectedMember.rt}
               </p>

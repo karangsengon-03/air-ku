@@ -143,7 +143,7 @@ export default function DusunRTSection({ settings, showConfirm }: DusunRTSection
               <div style={{ display: "flex", alignItems: "center", padding: "14px 16px", background: "var(--color-bg)", gap: 6 }}>
                 <button
                   onClick={() => setExpandedDusun(expandedDusun === dusun ? null : dusun)}
-                  style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700, color: "var(--color-txt)", display: "flex", alignItems: "center", gap: 8 }}
+                  style={{ flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", fontSize: 15, fontWeight: 700, color: "var(--color-txt)", display: "flex", alignItems: "center", gap: 8 }}
                 >
                   <MapPin size={14} style={{ color: "var(--color-primary)", flexShrink: 0 }} />
                   <span>{dusun}</span>

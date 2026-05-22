@@ -37,9 +37,9 @@ export function AccountsSection() {
     <SettingsSection icon={<UserCog size={18} />} title="Akun Pengguna">
       <div style={{ paddingTop: 12 }}>
         {loading ? (
-          <p style={{ fontSize: 14, color: "var(--color-txt3)" }}>Memuat...</p>
+          <p style={{ fontSize: 13, color: "var(--color-txt3)" }}>Memuat...</p>
         ) : accounts.length === 0 ? (
-          <p style={{ fontSize: 14, color: "var(--color-txt3)" }}>Belum ada akun terdaftar.</p>
+          <p style={{ fontSize: 13, color: "var(--color-txt3)" }}>Belum ada akun terdaftar.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {accounts.map((a) => (
@@ -149,7 +149,7 @@ export function InfoAppSection() {
           { label: "Platform", val: "Progressive Web App (PWA)" },
           { label: "Database", val: "Firebase Firestore" },
         ].map((item) => (
-          <div key={item.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 14 }}>
+          <div key={item.label} style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
             <span style={{ color: "var(--color-txt3)" }}>{item.label}</span>
             <span style={{ color: "var(--color-txt)", fontWeight: 500 }}>{item.val}</span>
           </div>

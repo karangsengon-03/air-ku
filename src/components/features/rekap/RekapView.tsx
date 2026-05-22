@@ -188,7 +188,7 @@ export default function RekapView() {
       {loading && (
         <div className="flex flex-col items-center gap-3 py-12">
           <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-primary)" }} />
-          <p style={{ color: "var(--color-txt3)", fontSize: 14 }}>Memuat rekap…</p>
+          <p style={{ color: "var(--color-txt3)", fontSize: 13 }}>Memuat rekap…</p>
         </div>
       )}
 
@@ -196,7 +196,7 @@ export default function RekapView() {
       {!loading && filtered.length === 0 && (
         <div className="flex flex-col items-center gap-3 py-12">
           <Droplets size={36} style={{ color: "var(--color-txt3)" }} />
-          <p className="text-center" style={{ color: "var(--color-txt3)", fontSize: 14 }}>
+          <p className="text-center" style={{ color: "var(--color-txt3)", fontSize: 13 }}>
             {rows.length === 0 ? `Belum ada tagihan untuk ${bulanLabel}.` : "Tidak ada data sesuai filter."}
           </p>
         </div>

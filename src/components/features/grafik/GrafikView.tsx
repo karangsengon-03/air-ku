@@ -97,7 +97,7 @@ export default function GrafikView() {
     return (
       <div className="flex flex-col items-center gap-3 py-16">
         <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-primary)" }} />
-        <p style={{ color: "var(--color-txt3)", fontSize: 14 }}>Memuat data grafik…</p>
+        <p style={{ color: "var(--color-txt3)", fontSize: 13 }}>Memuat data grafik…</p>
       </div>
     );
   }
@@ -106,7 +106,7 @@ export default function GrafikView() {
     return (
       <div className="flex flex-col items-center gap-3 py-16">
         <BarChart2 size={36} style={{ color: "var(--color-txt3)" }} />
-        <p style={{ color: "var(--color-belum)", fontSize: 14 }}>Gagal memuat data grafik.</p>
+        <p style={{ color: "var(--color-belum)", fontSize: 13 }}>Gagal memuat data grafik.</p>
         <button className="btn-secondary" style={{ height: 44 }} onClick={() => refetch()}>Coba Lagi</button>
       </div>
     );
@@ -134,7 +134,7 @@ export default function GrafikView() {
       {noData ? (
         <div className="flex flex-col items-center gap-3 py-12">
           <BarChart2 size={36} style={{ color: "var(--color-txt3)" }} />
-          <p style={{ color: "var(--color-txt3)", fontSize: 14 }}>Belum ada data untuk tahun {selectedTahun}.</p>
+          <p style={{ color: "var(--color-txt3)", fontSize: 13 }}>Belum ada data untuk tahun {selectedTahun}.</p>
         </div>
       ) : (
         <>

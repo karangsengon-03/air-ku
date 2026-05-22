@@ -20,7 +20,7 @@ export default function QuickPayForm({
 }: QuickPayFormProps) {
   return (
     <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>Iuran Rata — {bulanLabel}</p>
+      <p style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>Iuran Rata — {bulanLabel}</p>
 
       <div style={{
         background: "rgba(21,128,61,0.06)", border: "1px solid rgba(21,128,61,0.2)",
@@ -52,7 +52,7 @@ export default function QuickPayForm({
               key={v}
               onClick={() => onPresetChange(v === qpPreset ? null : v)}
               style={{
-                padding: "10px 12px", borderRadius: 8, fontSize: 14, fontWeight: 800,
+                padding: "10px 12px", borderRadius: 8, fontSize: 13, fontWeight: 800,
                 border: qpPreset === v ? "2px solid var(--color-primary)" : "2px solid var(--color-border)",
                 background: qpPreset === v ? "rgba(3,105,161,0.1)" : "var(--color-bg)",
                 color: qpPreset === v ? "var(--color-primary)" : "var(--color-txt)",

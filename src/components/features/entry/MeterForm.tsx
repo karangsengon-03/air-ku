@@ -30,7 +30,7 @@ export default function MeterForm({
 }: MeterFormProps) {
   return (
     <div className="card" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ fontWeight: 700, fontSize: 14, color: "var(--color-txt)" }}>Meter Air — {bulanLabel}</p>
+      <p style={{ fontWeight: 700, fontSize: 15, color: "var(--color-txt)" }}>Meter Air — {bulanLabel}</p>
 
       {/* Meter Awal */}
       <div>
