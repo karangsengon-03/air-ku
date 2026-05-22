@@ -43,7 +43,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           meterAwalPertama: "",
         }
       : {
-          nama: "", nomorSambungan: "", alamat: "", rt: "", dusun: "",
+          nama: "", nomorSambungan: "", alamat: "KARANG SENGON", rt: "", dusun: "",
           status: "aktif", meterAwalPertama: "",
         },
   });
@@ -192,16 +192,11 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           {/* RT */}
           <div>
             <label htmlFor="member-rt" className="section-label">RT</label>
-            {rtList.length > 0 ? (
-              <select id="member-rt" className="input-field" style={{ cursor: "pointer" }}
-                {...register("rt")}>
-                <option value="">-- Pilih RT --</option>
-                {rtList.map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
-            ) : (
-              <input id="member-rt" className="input-field" placeholder="Nomor RT (opsional)"
-                {...register("rt")} />
-            )}
+            <select id="member-rt" className="input-field" style={{ cursor: "pointer" }}
+              {...register("rt")}>
+              <option value="">-- Pilih RT --</option>
+              {rtList.map((r) => <option key={r} value={r}>{r}</option>)}
+            </select>
           </div>
 
           {/* Alamat */}
@@ -209,7 +204,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
             <label htmlFor="member-alamat" className="section-label">Alamat</label>
             <textarea id="member-alamat" className="input-field"
               style={{ height: "auto", paddingTop: 14, paddingBottom: 14, resize: "none", minHeight: 80 }}
-              placeholder="Alamat lengkap (opsional)"
+              placeholder="Alamat lengkap"
               rows={2}
               {...register("alamat")} />
           </div>
