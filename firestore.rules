@@ -2,8 +2,8 @@ rules_version = '2';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AirKu — Firestore Security Rules
-// Prinsip: hanya user yang sudah login (Firebase Auth) yang bisa akses.
-// Akun ditambahkan manual di Firebase Console — tidak ada registrasi mandiri.
+// Roles: admin | penagih | viewer
+// Viewer: 1 akun bersama (warga@air.ku) — hanya baca data publik
 // ─────────────────────────────────────────────────────────────────────────────
 
 service cloud.firestore {
@@ -11,92 +11,88 @@ service cloud.firestore {
 
     // ─── Helper functions ──────────────────────────────────────────────────
 
-    // Cek user sudah login
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Ambil data role user dari /roles/{uid}
     function getUserRole() {
       return get(/databases/$(database)/documents/roles/$(request.auth.uid)).data;
     }
 
-    // Cek apakah user adalah admin
     function isAdmin() {
       return isSignedIn() && getUserRole().role == "admin";
     }
 
-    // Cek apakah user adalah penagih
     function isPenagih() {
       return isSignedIn() && getUserRole().role == "penagih";
     }
 
-    // Cek apakah user adalah admin ATAU penagih (akun valid terdaftar)
+    function isViewer() {
+      return isSignedIn() && getUserRole().role == "viewer";
+    }
+
     function isValidUser() {
       return isSignedIn() && getUserRole().role in ["admin", "penagih"];
     }
 
+    // Admin atau penagih (bukan viewer)
+    function isStaff() {
+      return isSignedIn() && getUserRole().role in ["admin", "penagih"];
+    }
+
     // ─── /roles/{uid} ─────────────────────────────────────────────────────
-    // Admin: baca semua, tidak bisa tulis dari app (hanya via Console)
-    // Penagih: hanya bisa baca dokumen miliknya sendiri
-    // Tidak ada yang bisa write dari app — semua akun dikelola manual
+    // Viewer hanya bisa baca dokumen miliknya sendiri (untuk auth check)
     match /roles/{uid} {
       allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
-      allow write: if false; // Hanya Firebase Console / Admin SDK
+      allow write: if false;
     }
 
     // ─── /settings/main ───────────────────────────────────────────────────
-    // Admin: baca + tulis
-    // Penagih: baca saja (perlu baca settings untuk kalkulasi tagihan & lock)
+    // Viewer perlu baca settings untuk nama organisasi & kalkulasi
     match /settings/main {
-      allow read: if isValidUser();
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
       allow write: if isAdmin();
     }
 
     // ─── /hargaHistory/{id} ───────────────────────────────────────────────
-    // Admin: baca + tulis (simpan saat ubah tarif)
-    // Penagih: baca saja (perlu untuk snapshot harga tagihan)
+    // Viewer boleh baca untuk transparansi riwayat tarif
     match /hargaHistory/{id} {
-      allow read: if isValidUser();
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
       allow create, update: if isAdmin();
-      allow delete: if false; // Riwayat harga tidak boleh dihapus
+      allow delete: if false;
     }
 
     // ─── /members/{id} ────────────────────────────────────────────────────
-    // Admin: CRUD penuh
-    // Penagih: baca saja (perlu untuk entry meter dan tagihan)
+    // Viewer boleh baca daftar pelanggan (transparan)
     match /members/{id} {
-      allow read: if isValidUser();
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
 
     // ─── /tagihan/{id} ────────────────────────────────────────────────────
-    // Admin: CRUD penuh (baca, tambah, tandai lunas, hapus)
-    // Penagih: baca + tambah (entry meter) + update status (tandai lunas)
-    //          Penagih TIDAK bisa hapus tagihan
+    // Viewer boleh baca tagihan (transparan)
+    // Viewer TIDAK bisa create/update/delete
     match /tagihan/{id} {
-      allow read: if isValidUser();
-      allow create: if isValidUser(); // Admin dan penagih bisa entry meter
-      allow update: if isValidUser(); // Admin dan penagih bisa tandai lunas
-      allow delete: if isAdmin();     // Hanya admin yang bisa hapus tagihan
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
+      allow create: if isStaff();
+      allow update: if isStaff();
+      allow delete: if isAdmin();
     }
 
     // ─── /operasional/{id} ────────────────────────────────────────────────
-    // Admin only: semua operasi
-    // Penagih: tidak ada akses
+    // Admin only — viewer tidak bisa baca
     match /operasional/{id} {
       allow read, write: if isAdmin();
     }
 
     // ─── /activityLog/{id} ────────────────────────────────────────────────
-    // Admin: baca semua log
-    // Penagih: hanya bisa tulis (saveActivityLog) — tidak bisa baca
-    // Tidak ada yang bisa delete dari app (trim dilakukan via Admin SDK / batch)
+    // Admin only baca — viewer tidak bisa baca log internal
+    // Viewer juga tidak perlu tulis log (tidak ada aksi yang dicatat)
     match /activityLog/{id} {
       allow read: if isAdmin();
-      allow create: if isValidUser(); // Kedua role bisa catat aktivitas
-      allow update, delete: if false; // Log tidak boleh diubah/dihapus dari app
+      allow create: if isStaff();
+      allow update, delete: if false;
     }
 
     // ─── Blokir semua path lain ────────────────────────────────────────────

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Droplets, Download, Share2, Filter, Printer } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getTagihanRekap, getTotalOperasional } from "@/lib/db";
-import { formatRp, formatM3 } from "@/lib/helpers";
+import { formatRp, isMenunggak } from "@/lib/helpers";
 import { downloadPdfRekap, buildWaKolektif, RekapRow } from "@/lib/export";
 import { MONTHS, YEARS } from "@/lib/constants";
 import RekapTable from "./RekapTable";
@@ -36,6 +36,8 @@ export default function RekapView() {
         nama: t.memberNama, nomorSambungan: t.memberNomorSambungan,
         dusun: t.memberDusun, rt: t.memberRT,
         pemakaian: t.pemakaian, total: t.total, status: t.status,
+        bulan: t.bulan, tahun: t.tahun,
+        menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
       })));
       setTotalOps(ops);
     } catch {
@@ -68,7 +70,8 @@ export default function RekapView() {
   });
 
   const jumlahLunas = filtered.filter((r) => r.status === "lunas").length;
-  const jumlahBelum = filtered.filter((r) => r.status === "belum").length;
+  const jumlahBelum = filtered.filter((r) => r.status === "belum" && !r.menunggak).length;
+  const jumlahMenunggak = filtered.filter((r) => r.menunggak).length;
   const totalTerkumpul = filtered.filter((r) => r.status === "lunas").reduce((a, r) => a + r.total, 0);
   const totalTagihan = filtered.reduce((a, r) => a + r.total, 0);
   const totalM3 = filtered.reduce((a, r) => a + r.pemakaian, 0);
@@ -211,7 +214,7 @@ export default function RekapView() {
               { label: "Terkumpul", val: formatRp(totalTerkumpul), color: "var(--color-primary)" },
               { label: "Total Tagihan", val: formatRp(totalTagihan), color: "var(--color-txt2)" },
               { label: "Lunas / Total", val: `${jumlahLunas} / ${filtered.length}`, color: "var(--color-lunas)" },
-              { label: "Total Pemakaian", val: formatM3(totalM3), color: "var(--color-accent)" },
+              { label: "Menunggak", val: `${jumlahMenunggak} pelanggan`, color: jumlahMenunggak > 0 ? "var(--color-belum)" : "var(--color-txt3)" },
             ].map((s) => (
               <div key={s.label} className="card" style={{ borderLeft: `3px solid ${s.color}`, padding: "14px 16px" }}>
                 <div className="section-label mb-1">{s.label}</div>
@@ -243,6 +246,7 @@ export default function RekapView() {
             totalTagihan={totalTagihan}
             jumlahLunas={jumlahLunas}
             jumlahBelum={jumlahBelum}
+            jumlahMenunggak={jumlahMenunggak}
           />
 
           <button onClick={() => fetchData()} className="btn-ghost w-full" style={{ height: 48, fontSize: 13 }}>

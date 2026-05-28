@@ -19,7 +19,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   useSettings();
   useData();
 
-  const { authLoading, firebaseUser, setIsOnline } = useAppStore();
+  const { authLoading, firebaseUser, setIsOnline, userRole } = useAppStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -73,6 +73,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       router.replace("/login");
     }
   }, [authLoading, firebaseUser, router]);
+
+  // Viewer tidak boleh akses: entry, settings, operasional, log, rekap
+  const VIEWER_FORBIDDEN = ["/entry", "/settings", "/operasional", "/log", "/rekap", "/accounts"];
+  useEffect(() => {
+    if (!authLoading && userRole?.role === "viewer") {
+      if (VIEWER_FORBIDDEN.some((p) => pathname.startsWith(p))) {
+        router.replace("/dashboard");
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, userRole, pathname, router]);
 
   if (authLoading) return <LoadingScreen />;
   if (!firebaseUser) return null;

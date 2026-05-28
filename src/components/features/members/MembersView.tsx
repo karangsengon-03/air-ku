@@ -16,6 +16,7 @@ import ModalPortal from "@/components/ui/ModalPortal";
 export default function MembersView() {
   const { members, settings, firebaseUser, userRole, showConfirm } = useAppStore();
   const isAdmin = userRole?.role === "admin";
+  const isViewer = userRole?.role === "viewer";
 
   // Search & filter
   const [search, setSearch] = useState("");
@@ -187,6 +188,7 @@ export default function MembersView() {
               key={m.id}
               member={m}
               isAdmin={isAdmin}
+              isViewer={isViewer}
               onDetail={openDetail}
               onEdit={(m) => { setEditTarget(m); setModalOpen(true); }}
               onDelete={handleDelete}

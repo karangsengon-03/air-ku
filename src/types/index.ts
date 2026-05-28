@@ -8,8 +8,8 @@
  */
 
 export type { Role, MemberStatus, TagihanStatus, ModeTunggakan, FirestoreTs, FirestoreTimestampLike } from './common';
-export type { BlokTarif, AppSettings, HargaHistory }             from './settings';
-export {      defaultSettings }                                   from './settings';
+export type { BlokTarif, AppSettings, HargaHistory, TipeBlok, ModeTarif } from './settings';
+export {      defaultSettings }                                            from './settings';
 export type { Member }                                            from './member';
 export type { BlokSnapshot, Tagihan }                            from './tagihan';
 export type { Operasional }                                       from './operasional';

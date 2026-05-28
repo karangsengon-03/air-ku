@@ -33,7 +33,13 @@ export default function EntryView() {
   const isAdmin = userRole?.role === "admin";
   const isLocked = settings.globalLock;
 
-  const [entryMode, setEntryMode] = useState<EntryMode>("quickpay");
+  // Mode awal entry: ikuti setting global jika mode = "global", else bebas pilih
+  const defaultMode: EntryMode = settings.modeTarif === "global"
+    ? (settings.modeTarifGlobal === "rata" ? "quickpay" : "meter")
+    : "quickpay";
+
+  const [entryMode, setEntryMode] = useState<EntryMode>(defaultMode);
+  const modeIsLocked = settings.modeTarif === "global"; // jika global, toggle disembunyikan
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [search, setSearch] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -182,22 +188,34 @@ export default function EntryView() {
         Belum entry = Belum Bayar. Tidak perlu langkah tambahan.
       </div>
 
-      {/* Entry mode toggle */}
-      <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1px solid var(--color-border)" }}>
-        {([
-          { key: "quickpay", label: "Iuran Rata", icon: Zap },
-          { key: "meter", label: "Meter Air", icon: Gauge },
-        ] as { key: EntryMode; label: string; icon: typeof Zap }[]).map((m) => (
-          <button key={m.key} onClick={() => { setEntryMode(m.key); handleReset(); }}
-            style={{
-              flex: 1, padding: "10px 12px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
-              background: entryMode === m.key ? "var(--color-primary)" : "var(--color-bg)",
-              color: entryMode === m.key ? "white" : "var(--color-txt3)",
-            }}>
-            {m.label}
-          </button>
-        ))}
-      </div>
+      {/* Entry mode toggle — hanya tampil jika mode per_pelanggan */}
+      {modeIsLocked ? (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          padding: "10px 14px", borderRadius: 10, border: "1px solid var(--color-border)",
+          background: "var(--color-bg)", fontSize: 13, color: "var(--color-txt3)", fontWeight: 600,
+        }}>
+          {entryMode === "quickpay" ? <Zap size={14} /> : <Gauge size={14} />}
+          Mode Global: {entryMode === "quickpay" ? "Iuran Rata" : "Meter Air"}
+          <span style={{ fontSize: 11, marginLeft: 4 }}>(diatur di Pengaturan)</span>
+        </div>
+      ) : (
+        <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1px solid var(--color-border)" }}>
+          {([
+            { key: "quickpay", label: "Iuran Rata", icon: Zap },
+            { key: "meter", label: "Meter Air", icon: Gauge },
+          ] as { key: EntryMode; label: string; icon: typeof Zap }[]).map((m) => (
+            <button key={m.key} onClick={() => { setEntryMode(m.key); handleReset(); }}
+              style={{
+                flex: 1, padding: "10px 12px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+                background: entryMode === m.key ? "var(--color-primary)" : "var(--color-bg)",
+                color: entryMode === m.key ? "white" : "var(--color-txt3)",
+              }}>
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Step indicator */}
       <div style={{ display: "flex", alignItems: "center" }}>

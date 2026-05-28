@@ -193,8 +193,8 @@ describe("hitungTagihan", () => {
     batasBlok: 10,
     hargaBlok2: 3000,
     blokTarif: [
-      { batasAtas: 10, harga: 2000 },
-      { batasAtas: null, harga: 3000 },
+      { batasAtas: 10, harga: 2000, tipe: "per_m3" as const },
+      { batasAtas: null, harga: 3000, tipe: "per_m3" as const },
     ],
   };
 

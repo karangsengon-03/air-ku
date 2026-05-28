@@ -17,10 +17,10 @@ export function getBlokTarif(settings: Pick<AppSettings, "hargaBlok1" | "batasBl
   if (settings.blokTarif && settings.blokTarif.length >= 1) {
     return settings.blokTarif;
   }
-  // Legacy fallback
+  // Legacy fallback — tipe per_m3 (perilaku lama)
   return [
-    { batasAtas: settings.batasBlok, harga: settings.hargaBlok1 },
-    { batasAtas: null, harga: settings.hargaBlok2 },
+    { batasAtas: settings.batasBlok, harga: settings.hargaBlok1, tipe: 'per_m3' as const },
+    { batasAtas: null, harga: settings.hargaBlok2, tipe: 'per_m3' as const },
   ];
 }
 
@@ -40,9 +40,26 @@ export function hitungTagihan(
   for (let i = 0; i < blokTarif.length; i++) {
     const blok = blokTarif[i];
     const isLast = i === blokTarif.length - 1;
+    const tipe = blok.tipe ?? 'per_m3';
 
+    if (tipe === 'flat') {
+      // Blok flat: selalu kena harga tetap, tidak peduli pemakaian aktual
+      // (selama pemakaian masuk range blok ini atau blok ini adalah satu-satunya)
+      const kapasitasBlok = blok.batasAtas !== null ? blok.batasAtas - batasSebelumnya : Infinity;
+      const pemakaianBlok = Math.min(sisaPemakaian, kapasitasBlok);
+      // Flat: subtotal = harga tetap (tidak dikali pemakaian)
+      // Hanya dikenakan jika pelanggan masuk ke blok ini (pemakaian > batasSebelumnya atau blok pertama)
+      const masukBlok = i === 0 || sisaPemakaian > 0;
+      const subtotal = masukBlok ? blok.harga : 0;
+      blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, tipe, subtotal });
+      sisaPemakaian -= pemakaianBlok > 0 ? pemakaianBlok : 0;
+      if (blok.batasAtas !== null) batasSebelumnya = blok.batasAtas;
+      continue;
+    }
+
+    // Tipe per_m3 (default)
     if (sisaPemakaian <= 0) {
-      blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, subtotal: 0 });
+      blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, tipe, subtotal: 0 });
       continue;
     }
 
@@ -55,7 +72,7 @@ export function hitungTagihan(
     }
 
     const subtotal = pemakaianBlok * blok.harga;
-    blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, subtotal });
+    blokDetail.push({ batasAtas: blok.batasAtas, harga: blok.harga, tipe, subtotal });
     sisaPemakaian -= pemakaianBlok;
     if (blok.batasAtas !== null) batasSebelumnya = blok.batasAtas;
   }
@@ -210,7 +227,31 @@ export function formatTanggalPanjang(ts: unknown): string {
   }
 }
 
-// ─── Bulan & Tahun Aktif ─────────────────────────────────────────────────────
+// ─── Status Tunggakan ────────────────────────────────────────────────────────
+
+/**
+ * Cek apakah tagihan yang belum bayar sudah melewati batas tanggal 25.
+ * Dipakai konsisten di semua menu: Tagihan, Rekap, Tunggakan, Dashboard.
+ *
+ * Logika:
+ * - Bulan sebelum bulan aktif → selalu menunggak
+ * - Bulan aktif → menunggak jika hari ini ≥ 25
+ */
+export function isMenunggak(
+  tagihanBulan: number,
+  tagihanTahun: number,
+  bulanAktif: number,
+  tahunAktif: number
+): boolean {
+  if (tagihanTahun < tahunAktif) return true;
+  if (tagihanTahun === tahunAktif && tagihanBulan < bulanAktif) return true;
+  if (tagihanTahun === tahunAktif && tagihanBulan === bulanAktif) {
+    return new Date().getDate() >= 25;
+  }
+  return false;
+}
+
+
 
 export function getBulanTahunAktif(): { bulan: number; tahun: number } {
   const now = new Date();

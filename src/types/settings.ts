@@ -3,10 +3,17 @@
  */
 import type { ModeTunggakan, FirestoreTs } from './common';
 
+/** Tipe perhitungan per blok */
+export type TipeBlok = 'per_m3' | 'flat';
+
+/** Mode entry tarif */
+export type ModeTarif = 'per_pelanggan' | 'global';
+
 /** Blok tarif individual dalam sistem multi-blok */
 export interface BlokTarif {
   batasAtas: number | null; // null = tidak terbatas (blok terakhir)
-  harga: number;            // Rp/m³
+  harga: number;            // Rp/m³ jika per_m3, atau Rp flat jika flat
+  tipe: TipeBlok;           // 'per_m3' | 'flat'
 }
 
 export interface AppSettings {
@@ -18,6 +25,9 @@ export interface AppSettings {
   hargaBlok2: number;
   // Multi-blok baru (override legacy jika ada)
   blokTarif?: BlokTarif[];
+  // Mode tarif entry
+  modeTarif: ModeTarif;           // 'per_pelanggan' | 'global'
+  modeTarifGlobal: 'meter' | 'rata'; // aktif jika modeTarif === 'global'
   modeTunggakan: ModeTunggakan;
   dusunList: string[];
   rtPerDusun: Record<string, string[]>;
@@ -30,13 +40,15 @@ export interface AppSettings {
 export const defaultSettings: AppSettings = {
   globalLock: false,
   abonemen: 5000,
-  hargaBlok1: 2000,
+  hargaBlok1: 25000,
   batasBlok: 10,
   hargaBlok2: 3000,
   blokTarif: [
-    { batasAtas: 10, harga: 2000 },
-    { batasAtas: null, harga: 3000 },
+    { batasAtas: 10, harga: 25000, tipe: 'flat' },
+    { batasAtas: null, harga: 3000, tipe: 'per_m3' },
   ],
+  modeTarif: 'per_pelanggan',
+  modeTarifGlobal: 'meter',
   modeTunggakan: 'mandiri',
   dusunList: [],
   rtPerDusun: {},
@@ -48,7 +60,6 @@ export const defaultSettings: AppSettings = {
 
 export interface HargaHistory {
   id?: string;
-  /** Timestamp Firestore saat perubahan tarif dicatat */
   tanggal: FirestoreTs;
   abonemen: number;
   hargaBlok1: number;

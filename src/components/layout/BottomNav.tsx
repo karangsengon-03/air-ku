@@ -33,12 +33,21 @@ const penagihNav = [
   { href: "/grafik", icon: TrendingUp, label: "Grafik" },
 ];
 
+const viewerNav = [
+  { href: "/dashboard", icon: Home, label: "Beranda" },
+  { href: "/tagihan", icon: Droplets, label: "Tagihan" },
+  { href: "/members", icon: Users, label: "Pelanggan" },
+  { href: "/tunggakan", icon: AlertTriangle, label: "Tunggakan" },
+  { href: "/grafik", icon: TrendingUp, label: "Grafik" },
+];
+
 export default function BottomNav() {
   const { userRole } = useAppStore();
   const pathname = usePathname();
   const [showMore, setShowMore] = useState(false);
   const isAdmin = userRole?.role === "admin";
-  const navItems = isAdmin ? adminNav : penagihNav;
+  const isViewer = userRole?.role === "viewer";
+  const navItems = isAdmin ? adminNav : isViewer ? viewerNav : penagihNav;
   const activeInMore = isAdmin && adminMoreNav.some((m) => pathname === m.href);
 
   useEffect(() => {

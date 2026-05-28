@@ -3,7 +3,7 @@
  */
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
-export type Role           = 'admin' | 'penagih';
+export type Role           = 'admin' | 'penagih' | 'viewer';
 export type MemberStatus   = 'aktif' | 'nonaktif' | 'pindah';
 export type TagihanStatus  = 'lunas' | 'belum';
 export type ModeTunggakan  = 'carryover' | 'mandiri';

@@ -55,7 +55,7 @@ interface TunggakanGroupCardProps {
   group: TunggakanGroup;
   isLocked: boolean;
   onTandaiLunas: (t: Tagihan) => void;
-  onShare: (t: Tagihan) => void;
+  onShare?: (t: Tagihan) => void;
 }
 
 export default function TunggakanGroupCard({
@@ -138,14 +138,16 @@ export default function TunggakanGroupCard({
                     <CheckCircle2 size={13} /> Tandai Lunas
                   </button>
                 )}
-                <button
-                  onClick={() => onShare(t)}
-                  className="btn-secondary"
-                  style={{ height: 48, width: 48, padding: 0 }}
-                  title="Kirim ke WA"
-                >
-                  <Share2 size={15} />
-                </button>
+                {onShare && (
+                  <button
+                    onClick={() => onShare(t)}
+                    className="btn-secondary"
+                    style={{ height: 48, width: 48, padding: 0 }}
+                    title="Kirim ke WA"
+                  >
+                    <Share2 size={15} />
+                  </button>
+                )}
               </div>
             </div>
           ))}

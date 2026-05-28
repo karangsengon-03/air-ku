@@ -15,12 +15,13 @@ export const STATUS_BG: Record<MemberStatus, string> = {
 interface MemberCardProps {
   member: Member;
   isAdmin: boolean;
+  isViewer?: boolean;
   onDetail: (m: Member) => void;
   onEdit: (m: Member) => void;
   onDelete: (m: Member) => void;
 }
 
-export default function MemberCard({ member: m, isAdmin, onDetail, onEdit, onDelete }: MemberCardProps) {
+export default function MemberCard({ member: m, isAdmin, isViewer, onDetail, onEdit, onDelete }: MemberCardProps) {
   return (
     <div className="card" style={{ padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -52,7 +53,7 @@ export default function MemberCard({ member: m, isAdmin, onDetail, onEdit, onDel
           <button className="btn-ghost" style={{ padding: 8, color: "var(--color-primary)" }} onClick={() => onDetail(m)} title="Riwayat">
             <FileText size={17} />
           </button>
-          {isAdmin && (
+          {isAdmin && !isViewer && (
             <>
               <button className="btn-ghost" style={{ padding: 8 }} onClick={() => onEdit(m)} title="Edit">
                 <Pencil size={17} />

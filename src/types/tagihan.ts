@@ -6,6 +6,7 @@ import type { TagihanStatus, FirestoreTs } from './common';
 export interface BlokSnapshot {
   batasAtas: number | null;
   harga: number;
+  tipe?: 'per_m3' | 'flat'; // snapshot tipe blok saat entry
   subtotal: number;
 }
 

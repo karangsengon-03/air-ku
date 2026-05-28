@@ -323,6 +323,9 @@ export interface RekapRow {
   pemakaian: number;
   total: number;
   status: "lunas" | "belum";
+  menunggak: boolean; // true jika belum bayar dan sudah lewat tgl 25
+  bulan: number;
+  tahun: number;
 }
 
 export async function downloadPdfRekap(

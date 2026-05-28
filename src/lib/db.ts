@@ -228,13 +228,22 @@ export async function getLatestHargaHistoryId(): Promise<string | null> {
 
 // ─── Tagihan Tunggakan ────────────────────────────────────────────────────────
 
+/**
+ * Ambil semua tagihan belum lunas yang dianggap "tunggakan".
+ *
+ * Logika:
+ * 1. Tagihan dari bulan-bulan SEBELUM bulan aktif yang masih belum lunas → selalu tunggakan.
+ * 2. Tagihan bulan AKTIF yang belum lunas → hanya tunggakan jika hari ini sudah lewat tanggal 25.
+ * 3. Filter createdAt member: pelanggan hanya dihitung tunggakan mulai dari bulan
+ *    dia terdaftar. Tagihan sebelum bulan terdaftar → diabaikan.
+ *
+ * Members di-pass dari luar (sudah ada di store) untuk hindari query ganda.
+ */
 export async function getTagihanBelumBayarSebelumBulanIni(
   bulan: number,
-  tahun: number
+  tahun: number,
+  members?: Member[]
 ): Promise<Tagihan[]> {
-  // ambil semua tagihan belum lunas sebelum bulan aktif
-  // kita filter: (tahun < tahunAktif) ATAU (tahun == tahunAktif && bulan < bulanAktif)
-  // Tanpa orderBy — filter dan sort di client
   const q = query(
     collection(db, "tagihan"),
     where("status", "==", "belum")
@@ -245,10 +254,48 @@ export async function getTagihanBelumBayarSebelumBulanIni(
     ...(d.data() as Omit<Tagihan, "id">),
   }));
 
+  const todayDate = new Date().getDate(); // 1–31
+  const sudahLewatTanggal25 = todayDate >= 25;
+
+  // Map memberId → { bulan, tahun } saat terdaftar
+  const memberCreatedMap = new Map<string, { bulan: number; tahun: number }>();
+  if (members && members.length > 0) {
+    for (const m of members) {
+      if (!m.createdAt) continue;
+      let d: Date;
+      if (m.createdAt instanceof Date) {
+        d = m.createdAt;
+      } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
+        d = new Date((m.createdAt as { seconds: number }).seconds * 1000);
+      } else {
+        continue;
+      }
+      memberCreatedMap.set(m.id!, { bulan: d.getMonth() + 1, tahun: d.getFullYear() });
+    }
+  }
+
   return all.filter((t) => {
-    if (t.tahun < tahun) return true;
-    if (t.tahun === tahun && t.bulan < bulan) return true;
-    return false;
+    // Tagihan bulan-bulan sebelum bulan aktif → selalu tunggakan
+    const isSebelumBulanAktif =
+      t.tahun < tahun || (t.tahun === tahun && t.bulan < bulan);
+
+    // Tagihan bulan aktif → tunggakan hanya jika sudah lewat tanggal 25
+    const isBulanAktif = t.tahun === tahun && t.bulan === bulan;
+    const isAktifDanLewat = isBulanAktif && sudahLewatTanggal25;
+
+    if (!isSebelumBulanAktif && !isAktifDanLewat) return false;
+
+    // Pelanggan hanya wajib bayar mulai bulan dia terdaftar
+    // Jika tidak ada di map (data lama tanpa createdAt), loloskan
+    const created = memberCreatedMap.get(t.memberId);
+    if (created) {
+      if (
+        t.tahun < created.tahun ||
+        (t.tahun === created.tahun && t.bulan < created.bulan)
+      ) return false;
+    }
+
+    return true;
   });
 }
 
@@ -356,7 +403,38 @@ export async function updateMember(
   id: string,
   data: Partial<Omit<Member, "id" | "createdAt" | "createdBy">>
 ): Promise<void> {
+  // Update dokumen member
   await updateDoc(doc(db, "members", id), data);
+
+  // Jika ada perubahan field yang di-snapshot ke tagihan,
+  // sync semua tagihan milik member ini secara batch
+  const snapshotFields: Record<string, string> = {
+    nama: "memberNama",
+    nomorSambungan: "memberNomorSambungan",
+    dusun: "memberDusun",
+    rt: "memberRT",
+  };
+
+  const tagihanUpdate: Record<string, string> = {};
+  for (const [memberField, tagihanField] of Object.entries(snapshotFields)) {
+    if (memberField in data && data[memberField as keyof typeof data] !== undefined) {
+      tagihanUpdate[tagihanField] = data[memberField as keyof typeof data] as string;
+    }
+  }
+
+  if (Object.keys(tagihanUpdate).length === 0) return; // Tidak ada field relevan yang berubah
+
+  // Ambil semua tagihan milik member ini
+  const q = query(collection(db, "tagihan"), where("memberId", "==", id));
+  const snap = await getDocs(q);
+  if (snap.empty) return;
+
+  // Batch update — Firestore batch max 500 dokumen, cukup untuk skala desa
+  const batch = writeBatch(db);
+  snap.docs.forEach((d) => {
+    batch.update(d.ref, tagihanUpdate);
+  });
+  await batch.commit();
 }
 
 export async function deleteMember(id: string): Promise<void> {

@@ -17,10 +17,11 @@ import TunggakanGroupCard, { TunggakanGroup, groupTunggakan } from "./TunggakanG
 import TunggakanSummary from "./TunggakanSummary";
 
 export default function TunggakanView() {
-  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm } =
+  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, members } =
     useAppStore();
 
   const isLocked = settings.globalLock;
+  const isViewer = userRole?.role === "viewer";
 
   const [tunggakan, setTunggakan] = useState<Tagihan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,8 +31,7 @@ export default function TunggakanView() {
       if (!firebaseUser) return;
       setLoading(true);
       try {
-        const data = await getTagihanBelumBayarSebelumBulanIni(activeBulan, activeTahun);
-        // #20: Batalkan state update jika komponen sudah unmount
+        const data = await getTagihanBelumBayarSebelumBulanIni(activeBulan, activeTahun, members);
         if (signal?.aborted) return;
         setTunggakan(data);
       } catch {
@@ -41,7 +41,7 @@ export default function TunggakanView() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [activeBulan, activeTahun, firebaseUser]
+    [activeBulan, activeTahun, firebaseUser, members]
   );
 
   // #20 Fix: AbortController cleanup untuk mencegah state update setelah unmount
@@ -167,22 +167,24 @@ export default function TunggakanView() {
       {/* List grup */}
       {!loading && groups.length > 0 && (
         <>
-          <button
-            onClick={handleShareKolektif}
-            className="btn-secondary w-full mb-4"
-            style={{ height: 48, fontSize: 13 }}
-          >
-            <Share2 size={14} /> Kirim Daftar Tunggakan ke WA
-          </button>
+          {!isViewer && (
+            <button
+              onClick={handleShareKolektif}
+              className="btn-secondary w-full mb-4"
+              style={{ height: 48, fontSize: 13 }}
+            >
+              <Share2 size={14} /> Kirim Daftar Tunggakan ke WA
+            </button>
+          )}
 
           <div className="flex flex-col gap-4">
             {groups.map((g) => (
               <TunggakanGroupCard
                 key={g.memberId}
                 group={g}
-                isLocked={isLocked}
+                isLocked={isLocked || isViewer}
                 onTandaiLunas={handleTandaiLunas}
-                onShare={handleShare}
+                onShare={isViewer ? undefined : handleShare}
               />
             ))}
           </div>

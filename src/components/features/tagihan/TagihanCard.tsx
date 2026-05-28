@@ -1,7 +1,8 @@
 "use client";
-import { CheckCircle2, Clock, Share2, Download } from "lucide-react";
-import { formatRp, formatM3, formatTanggal } from "@/lib/helpers";
+import { CheckCircle2, Clock, AlertTriangle, Share2, Download } from "lucide-react";
+import { formatRp, formatM3, formatTanggal, isMenunggak } from "@/lib/helpers";
 import { Tagihan } from "@/types";
+import { useAppStore } from "@/store/useAppStore";
 
 interface TagihanCardProps {
   tagihan: Tagihan;
@@ -10,15 +11,24 @@ interface TagihanCardProps {
 }
 
 export default function TagihanCard({ tagihan: t, onShare, onDownload }: TagihanCardProps) {
+  const { activeBulan, activeTahun } = useAppStore();
   const lunas = t.status === "lunas";
+  const menunggak = !lunas && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun);
   const isIuranRata = t.meterAwal === 0 && t.meterAkhir === 0;
+
+  const statusColor = lunas
+    ? "var(--color-lunas)"
+    : menunggak ? "var(--color-belum)" : "var(--color-tunggakan)";
+  const statusBg = lunas
+    ? "rgba(21,128,61,0.12)"
+    : menunggak ? "rgba(185,28,28,0.12)" : "rgba(202,138,4,0.12)";
 
   return (
     <div
       className="card"
       style={{
         padding: "14px 16px",
-        borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : "var(--color-belum)"}`,
+        borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : menunggak ? "var(--color-belum)" : "var(--color-tunggakan)"}`,
       }}
     >
       {/* Nama + badge */}
@@ -31,17 +41,13 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
             No. {t.memberNomorSambungan} · {t.memberDusun ? `${t.memberDusun} / ` : ""}RT {t.memberRT}
           </div>
         </div>
-        <span
-          className={lunas ? "badge-lunas" : "badge-belum"}
-          style={{
-            flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
-            fontSize: 13, padding: "3px 8px", borderRadius: 20, fontWeight: 700,
-            background: lunas ? "rgba(21,128,61,0.12)" : "rgba(185,28,28,0.1)",
-            color: lunas ? "var(--color-lunas)" : "var(--color-belum)",
-          }}
-        >
-          {lunas ? <CheckCircle2 size={11} /> : <Clock size={11} />}
-          {lunas ? "Lunas" : "Belum"}
+        <span style={{
+          flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
+          fontSize: 13, padding: "3px 8px", borderRadius: 20, fontWeight: 700,
+          background: statusBg, color: statusColor,
+        }}>
+          {lunas ? <CheckCircle2 size={11} /> : menunggak ? <AlertTriangle size={11} /> : <Clock size={11} />}
+          {lunas ? "Lunas" : menunggak ? "Menunggak" : "Belum"}
         </span>
       </div>
 
