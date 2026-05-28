@@ -1,9 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Search, X, Droplets, Filter } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { formatRp } from "@/lib/helpers";
+import { formatRp, isMenunggak } from "@/lib/helpers";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -16,7 +16,64 @@ export default function TagihanView() {
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
 
-  const filtered = tagihan.filter((t) => {
+  // Gabungkan tagihan yang ada + virtual entries untuk member belum di-entry
+  const allTagihan = useMemo(() => {
+    const membersAktif = members.filter((m) => m.status === "aktif");
+    const tagihanIds = new Set(tagihan.map((t) => t.memberId));
+    const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+
+    // Virtual tagihan untuk yang belum di-entry
+    const virtual: Tagihan[] = membersAktif
+      .filter((m) => m.id && !tagihanIds.has(m.id))
+      .map((m) => ({
+        id: `virtual-${m.id}`,
+        memberId: m.id!,
+        memberNama: m.nama,
+        memberNomorSambungan: m.nomorSambungan,
+        memberDusun: m.dusun ?? "",
+        memberRT: m.rt ?? "",
+        bulan: activeBulan,
+        tahun: activeTahun,
+        meterAwal: 0,
+        meterAkhir: 0,
+        pemakaian: 0,
+        subtotalBlok1: 0,
+        subtotalBlok2: 0,
+        subtotalPemakaian: 0,
+        total: 0,
+        hargaHistoryId: "",
+        abonemenSnapshot: settings.abonemen,
+        hargaBlok1Snapshot: settings.hargaBlok1,
+        batasBlokSnapshot: settings.batasBlok,
+        hargaBlok2Snapshot: settings.hargaBlok2,
+        blokTarifSnapshot: settings.blokTarif ?? [],
+        abonemen: settings.abonemen,
+        status: "belum" as const,
+        blokSnapshot: [],
+        tanggal: null,
+        tanggalBayar: null,
+        tanggalEntry: null,
+        entryOleh: "",
+        dibayarOleh: "",
+        diinputOleh: "",
+        nomorTagihan: "",
+        catatan: "",
+        _virtual: true,
+      }));
+
+    // Gabung: tagihan nyata + virtual, sort lunas dulu lalu menunggak lalu belum
+    const combined = [...tagihan, ...virtual];
+    combined.sort((a, b) => {
+      const aMenunggak = a.status === "belum" && (a.bulan < activeBulan || (a.bulan === activeBulan && menunggakBulanIni));
+      const bMenunggak = b.status === "belum" && (b.bulan < activeBulan || (b.bulan === activeBulan && menunggakBulanIni));
+      const order = (t: Tagihan, m: boolean) => t.status === "lunas" ? 0 : m ? 2 : 1;
+      if (order(a, aMenunggak) !== order(b, bMenunggak)) return order(a, aMenunggak) - order(b, bMenunggak);
+      return a.memberNama.localeCompare(b.memberNama, "id");
+    });
+    return combined;
+  }, [tagihan, members, activeBulan, activeTahun, settings]);
+
+  const filtered = allTagihan.filter((t) => {
     if (filter !== "semua" && t.status !== filter) return false;
     if (search) {
       const q = search.toLowerCase();
@@ -29,12 +86,9 @@ export default function TagihanView() {
     return true;
   });
 
-  const jumlahLunas = tagihan.filter((t) => t.status === "lunas").length;
-  const jumlahBelumTagihan = tagihan.filter((t) => t.status === "belum").length;
   const membersAktif = members.filter((m) => m.status === "aktif");
-  const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
-  const membersBelumInput = membersAktif.filter((m) => m.id && !memberIdsDiinput.has(m.id)).length;
-  const jumlahBelum = jumlahBelumTagihan + membersBelumInput;
+  const jumlahLunas = allTagihan.filter((t) => t.status === "lunas").length;
+  const jumlahBelum = allTagihan.filter((t) => t.status === "belum").length;
   const totalTerkumpul = tagihan.filter((t) => t.status === "lunas").reduce((s, t) => s + t.total, 0);
 
   const handleShare = async (t: Tagihan) => {
@@ -115,7 +169,7 @@ export default function TagihanView() {
       {/* Info jumlah */}
       {(search || filter !== "semua") && (
         <p style={{ fontSize: 13, color: "var(--color-txt3)" }}>
-          {filtered.length} dari {tagihan.length} tagihan
+          {filtered.length} dari {allTagihan.length} tagihan
         </p>
       )}
 
@@ -129,7 +183,7 @@ export default function TagihanView() {
         <div className="empty-state">
           <Droplets size={32} style={{ margin: "0 auto 8px", opacity: 0.3 }} />
           <p style={{ fontSize: 13 }}>
-            {tagihan.length === 0 ? `Belum ada tagihan untuk ${bulanLabel}.` : "Tidak ada yang sesuai filter."}
+            {allTagihan.length === 0 ? `Belum ada tagihan untuk ${bulanLabel}.` : "Tidak ada yang sesuai filter."}
           </p>
         </div>
       ) : (
@@ -138,8 +192,8 @@ export default function TagihanView() {
             <TagihanCard
               key={t.id}
               tagihan={t}
-              onShare={handleShare}
-              onDownload={handleDownload}
+              onShare={t.id?.startsWith("virtual-") ? undefined : handleShare}
+              onDownload={t.id?.startsWith("virtual-") ? undefined : handleDownload}
             />
           ))}
         </div>

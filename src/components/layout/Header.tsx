@@ -135,10 +135,18 @@ export default function Header({ title }: HeaderProps) {
                       <div style={{
                         display: "inline-block", marginTop: 4, fontSize: 11, fontWeight: 700,
                         padding: "2px 8px", borderRadius: 20,
-                        background: userRole.role === "admin" ? "rgba(3,105,161,0.12)" : "rgba(21,128,61,0.12)",
-                        color: userRole.role === "admin" ? "var(--color-primary)" : "var(--color-lunas)",
+                        background: userRole.role === "admin"
+                          ? "rgba(3,105,161,0.12)"
+                          : userRole.role === "penagih"
+                            ? "rgba(21,128,61,0.12)"
+                            : "rgba(202,138,4,0.12)",
+                        color: userRole.role === "admin"
+                          ? "var(--color-primary)"
+                          : userRole.role === "penagih"
+                            ? "var(--color-lunas)"
+                            : "var(--color-tunggakan)",
                       }}>
-                        {userRole.role === "admin" ? "Admin" : "Penagih"}
+                        {userRole.role === "admin" ? "Admin" : userRole.role === "penagih" ? "Penagih" : "Warga"}
                       </div>
                     </div>
                     <button onClick={handleLogout} style={{

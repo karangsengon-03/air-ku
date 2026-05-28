@@ -11,7 +11,7 @@ import RekapTable from "./RekapTable";
 import { toast } from "@/lib/toast";
 
 export default function RekapView() {
-  const { settings, activeBulan, activeTahun, setActiveBulanTahun, userRole, firebaseUser } = useAppStore();
+  const { settings, activeBulan, activeTahun, setActiveBulanTahun, userRole, firebaseUser, members } = useAppStore();
   const isAdmin = userRole?.role === "admin";
 
   const [rows, setRows] = useState<RekapRow[]>([]);
@@ -30,15 +30,56 @@ export default function RekapView() {
         getTagihanRekap(activeBulan, activeTahun),
         getTotalOperasional(activeBulan, activeTahun),
       ]);
-      // #20: Batalkan state update jika komponen sudah unmount
       if (signal?.aborted) return;
-      setRows(tagihan.map((t) => ({
-        nama: t.memberNama, nomorSambungan: t.memberNomorSambungan,
-        dusun: t.memberDusun, rt: t.memberRT,
-        pemakaian: t.pemakaian, total: t.total, status: t.status,
-        bulan: t.bulan, tahun: t.tahun,
-        menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
-      })));
+
+      // Build map tagihan by memberId
+      const tagihanMap = new Map(tagihan.map((t) => [t.memberId, t]));
+
+      // Join: semua member aktif + tagihan yang ada
+      const membersAktif = members.filter((m) => m.status === "aktif");
+
+      const rows: RekapRow[] = membersAktif.map((m) => {
+        const t = tagihanMap.get(m.id!);
+        if (t) {
+          // Sudah di-entry (lunas)
+          return {
+            nama: t.memberNama,
+            nomorSambungan: t.memberNomorSambungan,
+            dusun: t.memberDusun,
+            rt: t.memberRT,
+            pemakaian: t.pemakaian,
+            total: t.total,
+            status: t.status,
+            bulan: t.bulan,
+            tahun: t.tahun,
+            menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
+          };
+        } else {
+          // Belum di-entry = belum bayar
+          const menunggak = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+          return {
+            nama: m.nama,
+            nomorSambungan: m.nomorSambungan,
+            dusun: m.dusun ?? "",
+            rt: m.rt ?? "",
+            pemakaian: 0,
+            total: 0,
+            status: "belum" as const,
+            bulan: activeBulan,
+            tahun: activeTahun,
+            menunggak,
+          };
+        }
+      });
+
+      // Sort: lunas dulu, lalu belum, lalu menunggak — dalam tiap grup sort by nama
+      rows.sort((a, b) => {
+        const order = (r: RekapRow) => r.status === "lunas" ? 0 : r.menunggak ? 2 : 1;
+        if (order(a) !== order(b)) return order(a) - order(b);
+        return a.nama.localeCompare(b.nama, "id");
+      });
+
+      setRows(rows);
       setTotalOps(ops);
     } catch {
       if (signal?.aborted) return;
@@ -46,7 +87,7 @@ export default function RekapView() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [activeBulan, activeTahun, firebaseUser]);
+  }, [activeBulan, activeTahun, firebaseUser, members]);
 
   // #20 Fix: AbortController cleanup untuk mencegah state update setelah unmount
   useEffect(() => {

@@ -6,8 +6,8 @@ import { useAppStore } from "@/store/useAppStore";
 
 interface TagihanCardProps {
   tagihan: Tagihan;
-  onShare: (t: Tagihan) => void;
-  onDownload: (t: Tagihan) => void;
+  onShare?: (t: Tagihan) => void;
+  onDownload?: (t: Tagihan) => void;
 }
 
 export default function TagihanCard({ tagihan: t, onShare, onDownload }: TagihanCardProps) {
@@ -74,30 +74,36 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
         </div>
       </div>
 
-      {/* Aksi */}
-      <div className="row-8">
-        <button
-          onClick={() => onShare(t)}
-          style={{
-            flex: 1, height: 48, borderRadius: 8, border: "1px solid var(--color-border)",
-            background: "var(--color-bg)", color: "var(--color-primary)", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            fontSize: 13, fontWeight: 600,
-          }}
-        >
-          <Share2 size={14} /> Bagikan WA
-        </button>
-        <button
-          onClick={() => onDownload(t)}
-          style={{
-            width: 48, height: 48, borderRadius: 8, border: "1px solid var(--color-border)",
-            background: "var(--color-bg)", color: "var(--color-txt3)", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Download size={14} />
-        </button>
-      </div>
+      {/* Aksi — hanya tampil untuk tagihan nyata (bukan virtual) */}
+      {(onShare || onDownload) && (
+        <div className="row-8">
+          {onShare && (
+            <button
+              onClick={() => onShare(t)}
+              style={{
+                flex: 1, height: 48, borderRadius: 8, border: "1px solid var(--color-border)",
+                background: "var(--color-bg)", color: "var(--color-primary)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                fontSize: 13, fontWeight: 600,
+              }}
+            >
+              <Share2 size={14} /> Bagikan WA
+            </button>
+          )}
+          {onDownload && (
+            <button
+              onClick={() => onDownload(t)}
+              style={{
+                width: 48, height: 48, borderRadius: 8, border: "1px solid var(--color-border)",
+                background: "var(--color-bg)", color: "var(--color-txt3)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}
+            >
+              <Download size={14} />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
