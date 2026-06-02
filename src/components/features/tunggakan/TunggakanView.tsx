@@ -51,56 +51,94 @@ export default function TunggakanView() {
     return () => controller.abort();
   }, [fetchTunggakan]);
 
-  // Gabung tagihan belum bayar (Firestore) + virtual untuk member yang belum di-entry bulan ini
+  // Gabung tagihan belum bayar (Firestore) + virtual untuk member yang belum di-entry
   const tunggakan = useMemo(() => {
     const membersAktif = members.filter((m) => m.status === "aktif");
 
-    // Member yang sudah di-entry bulan ini (lunas atau belum) — tidak perlu virtual
-    const memberSudahEntryBulanIni = new Set(
-      allTagihan
-        .filter((t) => t.bulan === activeBulan && t.tahun === activeTahun)
-        .map((t) => t.memberId)
-    );
+    // Semua memberId yang sudah punya tagihan di bulan manapun
+    const memberTagihanMap = new Map<string, Set<string>>();
+    allTagihan.forEach((t) => {
+      const key = t.memberId;
+      if (!memberTagihanMap.has(key)) memberTagihanMap.set(key, new Set());
+      memberTagihanMap.get(key)!.add(`${t.tahun}-${t.bulan}`);
+    });
+    // Tambah yang dari tagihanBelum (dari Firestore, mungkin bulan lama)
+    tagihanBelum.forEach((t) => {
+      const key = t.memberId;
+      if (!memberTagihanMap.has(key)) memberTagihanMap.set(key, new Set());
+      memberTagihanMap.get(key)!.add(`${t.tahun}-${t.bulan}`);
+    });
 
-    // Virtual hanya jika sudah lewat tanggal 25 bulan aktif
-    const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
-    const virtual: Tagihan[] = menunggakBulanIni
-      ? membersAktif
-          .filter((m) => m.id && !memberSudahEntryBulanIni.has(m.id))
-          .map((m) => ({
-            id: `virtual-${m.id}-${activeBulan}-${activeTahun}`,
-            memberId: m.id!,
-            memberNama: m.nama,
-            memberNomorSambungan: m.nomorSambungan,
-            memberDusun: m.dusun ?? "",
-            memberRT: m.rt ?? "",
-            bulan: activeBulan,
-            tahun: activeTahun,
-            meterAwal: 0,
-            meterAkhir: 0,
-            pemakaian: 0,
-            subtotalBlok1: 0,
-            subtotalBlok2: 0,
-            subtotalPemakaian: 0,
-            total: 0,
-            abonemen: settings.abonemen,
-            abonemenSnapshot: settings.abonemen,
-            hargaBlok1Snapshot: settings.hargaBlok1,
-            batasBlokSnapshot: settings.batasBlok,
-            hargaBlok2Snapshot: settings.hargaBlok2,
-            hargaHistoryId: "",
-            blokSnapshot: [],
-            status: "belum" as const,
-            nomorTagihan: "",
-            tanggal: null,
-            tanggalBayar: null,
-            tanggalEntry: null,
-            dibayarOleh: "",
-            entryOleh: "",
-            diinputOleh: "",
-            catatan: "",
-          }))
-      : [];
+    const virtual: Tagihan[] = [];
+
+    // Cek bulan-bulan yang perlu virtual:
+    // 1. Bulan-bulan sebelum bulan aktif (selalu tunggakan jika belum di-entry)
+    // 2. Bulan aktif jika sudah lewat tgl 25
+    const bulanPerlu: Array<{ bulan: number; tahun: number }> = [];
+
+    // Bulan aktif jika sudah lewat tgl 25
+    if (isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)) {
+      bulanPerlu.push({ bulan: activeBulan, tahun: activeTahun });
+    }
+
+    // Bulan-bulan sebelumnya (3 bulan ke belakang cukup untuk kasus umum)
+    // Lebih dari itu sudah tertangkap oleh getTagihanBelumBayarSebelumBulanIni
+    for (let i = 1; i <= 3; i++) {
+      let b = activeBulan - i;
+      let y = activeTahun;
+      if (b <= 0) { b += 12; y -= 1; }
+      bulanPerlu.push({ bulan: b, tahun: y });
+    }
+
+    for (const { bulan: b, tahun: y } of bulanPerlu) {
+      membersAktif.forEach((m) => {
+        if (!m.id) return;
+        const key = `${y}-${b}`;
+        const sudahEntry = memberTagihanMap.get(m.id)?.has(key) ?? false;
+        if (sudahEntry) return;
+
+        // Cek createdAt — jangan tampilkan tunggakan sebelum member terdaftar
+        if (m.createdAt) {
+          let createdDate: Date | null = null;
+          if (m.createdAt instanceof Date) {
+            createdDate = m.createdAt;
+          } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
+            createdDate = new Date((m.createdAt as { seconds: number }).seconds * 1000);
+          }
+          if (createdDate) {
+            const createdBulan = createdDate.getMonth() + 1;
+            const createdTahun = createdDate.getFullYear();
+            if (y < createdTahun || (y === createdTahun && b < createdBulan)) return;
+          }
+        }
+
+        virtual.push({
+          id: `virtual-${m.id}-${b}-${y}`,
+          memberId: m.id,
+          memberNama: m.nama,
+          memberNomorSambungan: m.nomorSambungan,
+          memberDusun: m.dusun ?? "",
+          memberRT: m.rt ?? "",
+          bulan: b,
+          tahun: y,
+          meterAwal: 0, meterAkhir: 0, pemakaian: 0,
+          subtotalBlok1: 0, subtotalBlok2: 0, subtotalPemakaian: 0,
+          total: 0,
+          hargaHistoryId: "",
+          abonemenSnapshot: settings.abonemen,
+          hargaBlok1Snapshot: settings.hargaBlok1,
+          batasBlokSnapshot: settings.batasBlok,
+          hargaBlok2Snapshot: settings.hargaBlok2,
+          blokSnapshotList: [],
+          status: "belum" as const,
+          nomorTagihan: "",
+          tanggalBayar: null,
+          tanggalEntry: null,
+          entryOleh: "",
+          catatan: "",
+        });
+      });
+    }
 
     return [...tagihanBelum, ...virtual];
   }, [tagihanBelum, members, allTagihan, activeBulan, activeTahun, settings]);
