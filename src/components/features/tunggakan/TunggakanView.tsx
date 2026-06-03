@@ -126,7 +126,8 @@ export default function TunggakanView() {
     return () => controller.abort();
   }, [fetchTunggakan]);
 
-  const groups: TunggakanGroup[] = groupTunggakan(tunggakan);
+  const memberMap = new Map(members.map((m) => [m.id!, m.nama]));
+  const groups: TunggakanGroup[] = groupTunggakan(tunggakan, memberMap);
   const totalPelanggan = groups.length;
   const totalNominal = tunggakan.reduce((a, t) => a + t.total, 0);
   const totalBulan = tunggakan.length;

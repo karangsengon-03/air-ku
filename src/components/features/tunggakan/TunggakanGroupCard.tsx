@@ -18,14 +18,16 @@ export interface TunggakanGroup {
   jumlahBulan: number;
 }
 
-export function groupTunggakan(list: Tagihan[]): TunggakanGroup[] {
+export function groupTunggakan(list: Tagihan[], memberMap?: Map<string, string>): TunggakanGroup[] {
   const map = new Map<string, TunggakanGroup>();
 
   for (const t of list) {
     if (!map.has(t.memberId)) {
+      // Fallback nama dari memberMap jika memberNama kosong
+      const nama = t.memberNama || memberMap?.get(t.memberId) || "(Tanpa Nama)";
       map.set(t.memberId, {
         memberId: t.memberId,
-        memberNama: t.memberNama,
+        memberNama: nama,
         memberNomorSambungan: t.memberNomorSambungan,
         memberDusun: t.memberDusun,
         memberRT: t.memberRT,
