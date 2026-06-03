@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { AlertTriangle, CheckCircle2, Share2 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import {
+  getAllTagihanEntrySet,
   getTagihanBelumBayarSebelumBulanIni,
   updateTagihanStatus,
   saveActivityLog,
@@ -17,13 +18,13 @@ import TunggakanGroupCard, { TunggakanGroup, groupTunggakan } from "./TunggakanG
 import TunggakanSummary from "./TunggakanSummary";
 
 export default function TunggakanView() {
-  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, members, tagihan: allTagihan } =
+  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, members } =
     useAppStore();
 
   const isLocked = settings.globalLock;
   const isViewer = userRole?.role === "viewer";
 
-  const [tagihanBelum, setTagihanBelum] = useState<Tagihan[]>([]);
+  const [tunggakan, setTunggakan] = useState<Tagihan[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTunggakan = useCallback(
@@ -31,9 +32,83 @@ export default function TunggakanView() {
       if (!firebaseUser) return;
       setLoading(true);
       try {
-        const data = await getTagihanBelumBayarSebelumBulanIni(activeBulan, activeTahun, members);
+        // 1. Ambil semua tagihan yang sudah pernah di-entry (semua status, semua bulan)
+        const entrySet = await getAllTagihanEntrySet();
+
+        // 2. Ambil tagihan belum bayar dari Firestore (bulan-bulan sebelum aktif)
+        const tagihanBelum = await getTagihanBelumBayarSebelumBulanIni(
+          activeBulan, activeTahun, members
+        );
         if (signal?.aborted) return;
-        setTagihanBelum(data);
+
+        // 3. Buat virtual entries untuk member yang belum di-entry sama sekali
+        const membersAktif = members.filter((m) => m.status === "aktif");
+        const virtual: Tagihan[] = [];
+        const menunggakBulanAktif = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+
+        // Tentukan range bulan yang perlu dicek: dari bulan terdaftar s/d bulan aktif
+        membersAktif.forEach((m) => {
+          if (!m.id) return;
+
+          // Bulan mulai dari createdAt member
+          let startBulan = activeBulan;
+          let startTahun = activeTahun;
+          if (m.createdAt) {
+            let createdDate: Date | null = null;
+            if (m.createdAt instanceof Date) {
+              createdDate = m.createdAt;
+            } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
+              createdDate = new Date((m.createdAt as { seconds: number }).seconds * 1000);
+            }
+            if (createdDate) {
+              startBulan = createdDate.getMonth() + 1;
+              startTahun = createdDate.getFullYear();
+            }
+          }
+
+          // Iterasi semua bulan dari terdaftar s/d bulan aktif (tanpa batas)
+          let y = startTahun;
+          let b = startBulan;
+
+          while (y < activeTahun || (y === activeTahun && b <= activeBulan)) {
+            // Bulan aktif: hanya masuk tunggakan jika sudah lewat tgl 25
+            if (y === activeTahun && b === activeBulan && !menunggakBulanAktif) break;
+
+            const key = `${m.id}-${y}-${b}`;
+            if (!entrySet.has(key)) {
+              // Belum pernah di-entry bulan ini → virtual tunggakan
+              virtual.push({
+                id: `virtual-${m.id}-${b}-${y}`,
+                memberId: m.id,
+                memberNama: m.nama,
+                memberNomorSambungan: m.nomorSambungan,
+                memberDusun: m.dusun ?? "",
+                memberRT: m.rt ?? "",
+                bulan: b, tahun: y,
+                meterAwal: 0, meterAkhir: 0, pemakaian: 0,
+                subtotalBlok1: 0, subtotalBlok2: 0, subtotalPemakaian: 0,
+                total: 0,
+                hargaHistoryId: "",
+                abonemenSnapshot: settings.abonemen,
+                hargaBlok1Snapshot: settings.hargaBlok1,
+                batasBlokSnapshot: settings.batasBlok,
+                hargaBlok2Snapshot: settings.hargaBlok2,
+                blokSnapshotList: [],
+                status: "belum" as const,
+                nomorTagihan: "",
+                tanggalBayar: null, tanggalEntry: null,
+                entryOleh: "", catatan: "",
+              });
+            }
+
+            // Maju ke bulan berikutnya
+            b++;
+            if (b > 12) { b = 1; y++; }
+          }
+        });
+
+        // 4. Gabung: tagihan belum (Firestore) + virtual
+        setTunggakan([...tagihanBelum, ...virtual]);
       } catch {
         if (signal?.aborted) return;
         toast.error("Gagal memuat data tunggakan.");
@@ -41,7 +116,7 @@ export default function TunggakanView() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [activeBulan, activeTahun, firebaseUser, members]
+    [activeBulan, activeTahun, firebaseUser, members, settings]
   );
 
   useEffect(() => {
@@ -50,98 +125,6 @@ export default function TunggakanView() {
     fetchTunggakan(controller.signal);
     return () => controller.abort();
   }, [fetchTunggakan]);
-
-  // Gabung tagihan belum bayar (Firestore) + virtual untuk member yang belum di-entry
-  const tunggakan = useMemo(() => {
-    const membersAktif = members.filter((m) => m.status === "aktif");
-
-    // Semua memberId yang sudah punya tagihan di bulan manapun
-    const memberTagihanMap = new Map<string, Set<string>>();
-    allTagihan.forEach((t) => {
-      const key = t.memberId;
-      if (!memberTagihanMap.has(key)) memberTagihanMap.set(key, new Set());
-      memberTagihanMap.get(key)!.add(`${t.tahun}-${t.bulan}`);
-    });
-    // Tambah yang dari tagihanBelum (dari Firestore, mungkin bulan lama)
-    tagihanBelum.forEach((t) => {
-      const key = t.memberId;
-      if (!memberTagihanMap.has(key)) memberTagihanMap.set(key, new Set());
-      memberTagihanMap.get(key)!.add(`${t.tahun}-${t.bulan}`);
-    });
-
-    const virtual: Tagihan[] = [];
-
-    // Cek bulan-bulan yang perlu virtual:
-    // 1. Bulan-bulan sebelum bulan aktif (selalu tunggakan jika belum di-entry)
-    // 2. Bulan aktif jika sudah lewat tgl 25
-    const bulanPerlu: Array<{ bulan: number; tahun: number }> = [];
-
-    // Bulan aktif jika sudah lewat tgl 25
-    if (isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)) {
-      bulanPerlu.push({ bulan: activeBulan, tahun: activeTahun });
-    }
-
-    // Bulan-bulan sebelumnya (3 bulan ke belakang cukup untuk kasus umum)
-    // Lebih dari itu sudah tertangkap oleh getTagihanBelumBayarSebelumBulanIni
-    for (let i = 1; i <= 3; i++) {
-      let b = activeBulan - i;
-      let y = activeTahun;
-      if (b <= 0) { b += 12; y -= 1; }
-      bulanPerlu.push({ bulan: b, tahun: y });
-    }
-
-    for (const { bulan: b, tahun: y } of bulanPerlu) {
-      membersAktif.forEach((m) => {
-        if (!m.id) return;
-        const key = `${y}-${b}`;
-        const sudahEntry = memberTagihanMap.get(m.id)?.has(key) ?? false;
-        if (sudahEntry) return;
-
-        // Cek createdAt — jangan tampilkan tunggakan sebelum member terdaftar
-        if (m.createdAt) {
-          let createdDate: Date | null = null;
-          if (m.createdAt instanceof Date) {
-            createdDate = m.createdAt;
-          } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
-            createdDate = new Date((m.createdAt as { seconds: number }).seconds * 1000);
-          }
-          if (createdDate) {
-            const createdBulan = createdDate.getMonth() + 1;
-            const createdTahun = createdDate.getFullYear();
-            if (y < createdTahun || (y === createdTahun && b < createdBulan)) return;
-          }
-        }
-
-        virtual.push({
-          id: `virtual-${m.id}-${b}-${y}`,
-          memberId: m.id,
-          memberNama: m.nama,
-          memberNomorSambungan: m.nomorSambungan,
-          memberDusun: m.dusun ?? "",
-          memberRT: m.rt ?? "",
-          bulan: b,
-          tahun: y,
-          meterAwal: 0, meterAkhir: 0, pemakaian: 0,
-          subtotalBlok1: 0, subtotalBlok2: 0, subtotalPemakaian: 0,
-          total: 0,
-          hargaHistoryId: "",
-          abonemenSnapshot: settings.abonemen,
-          hargaBlok1Snapshot: settings.hargaBlok1,
-          batasBlokSnapshot: settings.batasBlok,
-          hargaBlok2Snapshot: settings.hargaBlok2,
-          blokSnapshotList: [],
-          status: "belum" as const,
-          nomorTagihan: "",
-          tanggalBayar: null,
-          tanggalEntry: null,
-          entryOleh: "",
-          catatan: "",
-        });
-      });
-    }
-
-    return [...tagihanBelum, ...virtual];
-  }, [tagihanBelum, members, allTagihan, activeBulan, activeTahun, settings]);
 
   const groups: TunggakanGroup[] = groupTunggakan(tunggakan);
   const totalPelanggan = groups.length;
@@ -181,7 +164,7 @@ export default function TunggakanView() {
   const handleShare = useCallback(
     async (t: Tagihan) => {
       if (t.id?.startsWith("virtual-")) {
-        toast.error("Tagihan ini belum tercatat, tidak bisa dibagikan.");
+        toast.error("Tagihan belum tercatat, tidak bisa dibagikan.");
         return;
       }
       try { await shareTagihan(t, settings); }
@@ -218,7 +201,7 @@ export default function TunggakanView() {
           <div className="text-xs mt-0.5" style={{ color: "var(--color-txt3)" }}>
             {isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)
               ? "Tagihan belum lunas melewati tanggal 25"
-              : "Belum melewati tanggal 25 bulan ini"}
+              : "Tagihan bulan sebelumnya yang belum dilunasi"}
           </div>
         </div>
       </div>
@@ -249,9 +232,7 @@ export default function TunggakanView() {
             Tidak ada tunggakan!
           </p>
           <p className="text-center text-sm" style={{ color: "var(--color-txt3)" }}>
-            {isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)
-              ? "Semua pelanggan sudah lunas."
-              : "Belum melewati tanggal 25 bulan ini."}
+            Semua pelanggan sudah lunas.
           </p>
         </div>
       )}

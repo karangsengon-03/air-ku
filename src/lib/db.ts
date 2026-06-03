@@ -355,6 +355,23 @@ export async function getOperasionalByTahun(
 
 // ─── Rekap: tagihan bulan tertentu (semua dusun) ──────────────────────────────
 
+/**
+ * Ambil semua tagihan yang sudah pernah di-entry (semua status, semua bulan).
+ * Return sebagai Set string "memberId-tahun-bulan" untuk cek sudah entry atau belum.
+ * Dipakai di TunggakanView untuk filter virtual entries.
+ */
+export async function getAllTagihanEntrySet(): Promise<Set<string>> {
+  const snap = await getDocs(collection(db, "tagihan"));
+  const result = new Set<string>();
+  snap.docs.forEach((d) => {
+    const data = d.data();
+    if (data.memberId && data.tahun && data.bulan) {
+      result.add(`${data.memberId}-${data.tahun}-${data.bulan}`);
+    }
+  });
+  return result;
+}
+
 export async function getTagihanRekap(
   bulan: number,
   tahun: number
