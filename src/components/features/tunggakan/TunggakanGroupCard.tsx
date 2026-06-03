@@ -85,7 +85,9 @@ export default function TunggakanGroupCard({
           <div className="flex items-center gap-2">
             <div className="text-right">
               <div className="mono font-bold text-base" style={{ color: "var(--color-tunggakan)" }}>
-                {formatRp(group.totalTunggakan)}
+                {group.tagihan.some((t) => t.catatan === "belum-dientry")
+                  ? "Belum Dientry"
+                  : formatRp(group.totalTunggakan)}
               </div>
               <div className="text-xs" style={{ color: "var(--color-txt3)" }}>
                 {group.jumlahBulan} bln tunggak
@@ -120,15 +122,22 @@ export default function TunggakanGroupCard({
                     Entry: {formatTanggal(t.tanggalEntry)}
                   </div>
                 </div>
-                <div className="mono font-bold text-base" style={{ color: "var(--color-txt)" }}>
-                  {formatRp(t.total)}
+                <div className="mono font-bold text-base" style={{ color: t.catatan === "belum-dientry" ? "var(--color-tunggakan)" : "var(--color-txt)" }}>
+                  {t.catatan === "belum-dientry" ? "Belum Dientry" : formatRp(t.total)}
                 </div>
               </div>
 
-              <div className="flex gap-3 text-xs mb-3" style={{ color: "var(--color-txt3)" }}>
-                <span>Meter: <span className="mono">{t.meterAwal} → {t.meterAkhir}</span></span>
-                <span>Pakai: <span className="mono font-semibold">{formatM3(t.pemakaian)}</span></span>
-              </div>
+              {t.catatan !== "belum-dientry" && (
+                <div className="flex gap-3 text-xs mb-3" style={{ color: "var(--color-txt3)" }}>
+                  <span>Meter: <span className="mono">{t.meterAwal} → {t.meterAkhir}</span></span>
+                  <span>Pakai: <span className="mono font-semibold">{formatM3(t.pemakaian)}</span></span>
+                </div>
+              )}
+              {t.catatan === "belum-dientry" && (
+                <div className="text-xs mb-3" style={{ color: "var(--color-tunggakan)" }}>
+                  Belum dicatat — lakukan entry via menu Entry
+                </div>
+              )}
 
               <div className="flex gap-2">
                 {!isLocked && (

@@ -48,8 +48,6 @@ export default function MeterForm({
           inputMode="numeric"
           placeholder="0"
           value={meterAwal}
-          readOnly={meterAwalAuto}
-          style={meterAwalAuto ? { background: "var(--color-border)" } : {}}
           onChange={(e) => onMeterAwalChange(e.target.value === "" ? "" : Number(e.target.value))}
         />
       </div>
