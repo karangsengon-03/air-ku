@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Search, X, Droplets, Filter } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { formatRp, isMenunggak } from "@/lib/helpers";
+import { formatRp, isMenunggak, hitungTagihan } from "@/lib/helpers";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -25,41 +25,44 @@ export default function TagihanView() {
     // Virtual tagihan untuk yang belum di-entry
     const virtual: Tagihan[] = membersAktif
       .filter((m) => m.id && !tagihanIds.has(m.id))
-      .map((m) => ({
-        id: `virtual-${m.id}`,
-        memberId: m.id!,
-        memberNama: m.nama,
-        memberNomorSambungan: m.nomorSambungan,
-        memberDusun: m.dusun ?? "",
-        memberRT: m.rt ?? "",
-        bulan: activeBulan,
-        tahun: activeTahun,
-        meterAwal: 0,
-        meterAkhir: 0,
-        pemakaian: 0,
-        subtotalBlok1: 0,
-        subtotalBlok2: 0,
-        subtotalPemakaian: 0,
-        total: 0,
-        hargaHistoryId: "",
-        abonemenSnapshot: settings.abonemen,
-        hargaBlok1Snapshot: settings.hargaBlok1,
-        batasBlokSnapshot: settings.batasBlok,
-        hargaBlok2Snapshot: settings.hargaBlok2,
-        blokTarifSnapshot: settings.blokTarif ?? [],
-        abonemen: settings.abonemen,
-        status: "belum" as const,
-        blokSnapshot: [],
-        tanggal: null,
-        tanggalBayar: null,
-        tanggalEntry: null,
-        entryOleh: "",
-        dibayarOleh: "",
-        diinputOleh: "",
-        nomorTagihan: "",
-        catatan: "",
-        _virtual: true,
-      }));
+      .map((m) => {
+        const kalkulasi = hitungTagihan(0, 0, settings);
+        return {
+          id: `virtual-${m.id}`,
+          memberId: m.id!,
+          memberNama: m.nama,
+          memberNomorSambungan: m.nomorSambungan,
+          memberDusun: m.dusun ?? "",
+          memberRT: m.rt ?? "",
+          bulan: activeBulan,
+          tahun: activeTahun,
+          meterAwal: 0,
+          meterAkhir: 0,
+          pemakaian: kalkulasi.pemakaian,
+          subtotalBlok1: kalkulasi.subtotalBlok1,
+          subtotalBlok2: kalkulasi.subtotalBlok2,
+          subtotalPemakaian: kalkulasi.subtotalPemakaian,
+          total: kalkulasi.total,
+          hargaHistoryId: "",
+          abonemenSnapshot: settings.abonemen,
+          hargaBlok1Snapshot: settings.hargaBlok1,
+          batasBlokSnapshot: settings.batasBlok,
+          hargaBlok2Snapshot: settings.hargaBlok2,
+          blokTarifSnapshot: settings.blokTarif ?? [],
+          abonemen: settings.abonemen,
+          status: "belum" as const,
+          blokSnapshot: [],
+          tanggal: null,
+          tanggalBayar: null,
+          tanggalEntry: null,
+          entryOleh: "",
+          dibayarOleh: "",
+          diinputOleh: "",
+          nomorTagihan: "",
+          catatan: "",
+          _virtual: true,
+        };
+      });
 
     // Gabung: tagihan nyata + virtual, sort lunas dulu lalu menunggak lalu belum
     const combined = [...tagihan, ...virtual];

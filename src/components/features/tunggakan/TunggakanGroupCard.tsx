@@ -71,7 +71,7 @@ export default function TunggakanGroupCard({
   return (
     <div className="card overflow-hidden" style={{ borderLeft: "4px solid var(--color-tunggakan)" }}>
       {/* Header grup */}
-      <button className="w-full p-4 text-left" onClick={() => setExpanded(!expanded)}>
+      <button className="w-full p-4 text-left" style={{ background: "var(--color-card)" }} onClick={() => setExpanded(!expanded)}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="font-bold text-base leading-tight" style={{ color: "var(--color-txt)" }}>
@@ -101,14 +101,14 @@ export default function TunggakanGroupCard({
 
       {/* Detail per tagihan */}
       {expanded && (
-        <div style={{ borderTop: "1px solid var(--color-border)" }}>
+        <div style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-card)" }}>
           {group.tagihan.map((t, idx) => (
             <div
               key={t.id}
               className="px-4 py-4"
               style={{
                 borderBottom: idx < group.tagihan.length - 1 ? "1px solid var(--color-border)" : "none",
-                background: idx % 2 === 0 ? "transparent" : "rgba(146,64,14,0.04)",
+                background: idx % 2 === 0 ? "var(--color-card)" : "var(--color-bg)",
               }}
             >
               <div className="flex items-center justify-between mb-2">
@@ -156,7 +156,7 @@ export default function TunggakanGroupCard({
 
           {/* Tandai SEMUA lunas */}
           {!isLocked && group.tagihan.length > 1 && (
-            <div className="p-3" style={{ borderTop: "1px solid var(--color-border)" }}>
+            <div className="p-3" style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-card)" }}>
               <button
                 onClick={() => group.tagihan.forEach((t) => onTandaiLunas(t))}
                 className="btn-primary w-full"

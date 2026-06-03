@@ -9,7 +9,7 @@ import {
   updateTagihanStatus,
   saveActivityLog,
 } from "@/lib/db";
-import { formatRp, isMenunggak } from "@/lib/helpers";
+import { formatRp, isMenunggak, hitungTagihan } from "@/lib/helpers";
 import { shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -77,6 +77,8 @@ export default function TunggakanView() {
             const key = `${m.id}-${y}-${b}`;
             if (!entrySet.has(key)) {
               // Belum pernah di-entry bulan ini → virtual tunggakan
+              // Hitung nominal berdasarkan tarif aktif (iuran rata, meter 0→0)
+              const kalkulasi = hitungTagihan(0, 0, settings);
               virtual.push({
                 id: `virtual-${m.id}-${b}-${y}`,
                 memberId: m.id,
@@ -85,9 +87,12 @@ export default function TunggakanView() {
                 memberDusun: m.dusun ?? "",
                 memberRT: m.rt ?? "",
                 bulan: b, tahun: y,
-                meterAwal: 0, meterAkhir: 0, pemakaian: 0,
-                subtotalBlok1: 0, subtotalBlok2: 0, subtotalPemakaian: 0,
-                total: 0,
+                meterAwal: 0, meterAkhir: 0,
+                pemakaian: kalkulasi.pemakaian,
+                subtotalBlok1: kalkulasi.subtotalBlok1,
+                subtotalBlok2: kalkulasi.subtotalBlok2,
+                subtotalPemakaian: kalkulasi.subtotalPemakaian,
+                total: kalkulasi.total,
                 hargaHistoryId: "",
                 abonemenSnapshot: settings.abonemen,
                 hargaBlok1Snapshot: settings.hargaBlok1,
