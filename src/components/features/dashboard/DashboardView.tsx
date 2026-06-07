@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Droplets, CheckCircle2, Clock, TrendingUp, ArrowRight, WifiOff } from "lucide-react";
+import { Droplets, CheckCircle2, Clock, AlertTriangle, TrendingUp, ArrowRight, WifiOff } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getTotalOperasional } from "@/lib/db";
 import { formatRp, formatM3 } from "@/lib/helpers";
@@ -41,15 +41,14 @@ export default function DashboardView() {
   }, [activeBulan, activeTahun]);
 
   const lunas = tagihan.filter((t) => t.status === "lunas");
-  const belumTagihan = tagihan.filter((t) => t.status === "belum");
+  const ditagih = tagihan.filter((t) => t.status === "belum"); // sudah di-entry, belum bayar
   const membersAktif = members.filter((m) => m.status === "aktif");
-  // Member aktif yang belum ada tagihan sama sekali bulan ini
   const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
   const membersBelumInput = membersAktif.filter((m) => m.id && !memberIdsDiinput.has(m.id));
-  // Total belum bayar = tagihan berstatus belum + yang belum diinput
-  const totalBelumCount = belumTagihan.length + membersBelumInput.length;
-  const totalBelumNominal = belumTagihan.reduce((s, t) => s + t.total, 0);
+  // Total belum bayar = yang ditagih + yang belum dientry sama sekali
+  const totalBelumCount = ditagih.length + membersBelumInput.length;
   const totalTerkumpul = lunas.reduce((s, t) => s + t.total, 0);
+  const nominalDitagih = ditagih.reduce((s, t) => s + t.total, 0); // nominal real dari tagihan Ditagih
   const totalM3 = tagihan.reduce((s, t) => s + t.pemakaian, 0);
   const pendapatanBersih = totalTerkumpul - totalOps;
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
@@ -88,7 +87,7 @@ export default function DashboardView() {
         </div>
       </div>
 
-      {/* 3 stat cards — 1 kolom */}
+      {/* 3 stat cards */}
       {[
         {
           icon: <CheckCircle2 size={18} />, color: "var(--color-lunas)",
@@ -96,9 +95,14 @@ export default function DashboardView() {
           sub: lunas.length > 0 ? formatRp(totalTerkumpul) : "Belum ada yang lunas",
         },
         {
-          icon: <Clock size={18} />, color: "var(--color-belum)",
-          label: "Belum Bayar", value: `${totalBelumCount} pelanggan`,
-          sub: totalBelumCount > 0 ? `Rp ${totalBelumNominal.toLocaleString("id-ID")} belum terkumpul` : "Semua sudah lunas",
+          icon: <Clock size={18} />, color: "var(--color-tunggakan)",
+          label: "Ditagih (Belum Bayar)", value: `${ditagih.length} pelanggan`,
+          sub: ditagih.length > 0 ? `${formatRp(nominalDitagih)} menunggu pembayaran` : "Semua tagihan sudah lunas",
+        },
+        {
+          icon: <AlertTriangle size={18} />, color: "var(--color-belum)",
+          label: "Belum Dientry", value: `${membersBelumInput.length} pelanggan`,
+          sub: membersBelumInput.length > 0 ? "Belum ada tagihan tercatat" : "Semua sudah dientry",
         },
         {
           icon: <Droplets size={18} />, color: "var(--color-accent)",

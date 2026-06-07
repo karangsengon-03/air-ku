@@ -2,15 +2,16 @@
 import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X } from "lucide-react";
+import { X, AlertCircle } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { saveMember, updateMember, cekNomorSambunganTerpakai, saveActivityLog } from "@/lib/db";
+import { saveMember, updateMember, saveActivityLog } from "@/lib/db";
 import { Member, MemberStatus } from "@/types";
 import { STATUS_LABEL, STATUS_COLOR, STATUS_BG } from "./MemberCard";
 import { handleFirebaseError } from "@/lib/firebase-errors";
 import { memberSchema, MemberFormValues } from "@/schemas";
 import { toast } from "@/lib/toast";
 import ModalPortal from "@/components/ui/ModalPortal";
+import { generateNomorList } from "@/lib/helpers";
 
 interface MemberFormProps {
   editTarget: Member | null;
@@ -18,7 +19,39 @@ interface MemberFormProps {
 }
 
 export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
-  const { settings, firebaseUser, userRole } = useAppStore();
+  const { settings, firebaseUser, userRole, members } = useAppStore();
+  const nomorAkhir = settings.nomorSambunganAkhir ?? 100;
+
+  // Set semua nomor yang sudah terpakai member lain
+  const nomorTerpakai = useMemo(() => {
+    const set = new Set<string>();
+    members.forEach((m) => {
+      if (m.id !== editTarget?.id) set.add(m.nomorSambungan);
+    });
+    return set;
+  }, [members, editTarget]);
+
+  // Generate daftar nomor + nomor milik editTarget sendiri jika di luar range
+  const nomorList = useMemo(() => {
+    const list = generateNomorList(nomorAkhir);
+    // Jika editTarget punya nomor di luar range, tetap tambahkan
+    if (editTarget?.nomorSambungan && !list.includes(editTarget.nomorSambungan)) {
+      list.unshift(editTarget.nomorSambungan);
+    }
+    return list;
+  }, [nomorAkhir, editTarget]);
+
+  // Cek apakah semua nomor dalam range sudah habis (untuk tambah baru)
+  const nomorHabis = useMemo(() => {
+    if (editTarget) return false;
+    return generateNomorList(nomorAkhir).every((n) => nomorTerpakai.has(n));
+  }, [nomorAkhir, nomorTerpakai, editTarget]);
+
+  // Default nomor: nomor pertama yang belum terpakai (untuk tambah baru)
+  const defaultNomor = useMemo(() => {
+    if (editTarget) return editTarget.nomorSambungan;
+    return generateNomorList(nomorAkhir).find((n) => !nomorTerpakai.has(n)) ?? "";
+  }, [nomorAkhir, nomorTerpakai, editTarget]);
 
   const dusunList = useMemo(() => settings.dusunList || [], [settings.dusunList]);
 
@@ -43,7 +76,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           meterAwalPertama: "",
         }
       : {
-          nama: "", nomorSambungan: "", alamat: "KARANG SENGON", rt: "", dusun: "",
+          nama: "", nomorSambungan: defaultNomor, alamat: "KARANG SENGON", rt: "", dusun: "",
           status: "aktif", meterAwalPertama: "",
         },
   });
@@ -77,8 +110,8 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
     }
 
     try {
-      const sudahAda = await cekNomorSambunganTerpakai(data.nomorSambungan.trim(), editTarget?.id);
-      if (sudahAda) {
+      // Validasi nomor terpakai (sudah dihandle via dropdown disabled, tapi double-check)
+      if (nomorTerpakai.has(data.nomorSambungan.trim())) {
         setError("nomorSambungan", {
           message: `Nomor sambungan "${data.nomorSambungan}" sudah digunakan pelanggan lain.`,
         });
@@ -164,11 +197,28 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
             {errors.nama && <p style={{ fontSize: 13, color: "var(--color-belum)", marginTop: 4 }}>{errors.nama.message}</p>}
           </div>
 
-          {/* Nomor Sambungan */}
+          {/* Nomor Sambungan — dropdown */}
           <div>
             <label htmlFor="member-nomor" className="section-label">Nomor Sambungan *</label>
-            <input id="member-nomor" className="input-field mono" placeholder="Contoh: 001, A-12"
-              {...register("nomorSambungan")} />
+            {nomorHabis ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 10, border: "1px solid var(--color-belum)", background: "rgba(185,28,28,0.07)", color: "var(--color-belum)", fontSize: 13 }}>
+                <AlertCircle size={15} style={{ flexShrink: 0 }} />
+                Semua nomor 001–{String(nomorAkhir).padStart(3, "0")} sudah terpakai. Tambah alokasi di Pengaturan.
+              </div>
+            ) : (
+              <select id="member-nomor" className="input-field mono" style={{ cursor: "pointer" }}
+                {...register("nomorSambungan")}>
+                {nomorList.map((n) => {
+                  const terpakai = nomorTerpakai.has(n);
+                  const isSelf = n === editTarget?.nomorSambungan;
+                  return (
+                    <option key={n} value={n} disabled={terpakai && !isSelf}>
+                      {n}{terpakai && !isSelf ? " (terpakai)" : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
             {errors.nomorSambungan && <p style={{ fontSize: 13, color: "var(--color-belum)", marginTop: 4 }}>{errors.nomorSambungan.message}</p>}
           </div>
 

@@ -1,8 +1,7 @@
 "use client";
 import { CheckCircle2, Clock, AlertTriangle, Share2, Download } from "lucide-react";
-import { formatRp, formatM3, formatTanggal, isMenunggak } from "@/lib/helpers";
+import { formatRp, formatM3, formatTanggal, getStatusTagihan, STATUS_TIER_LABEL, STATUS_TIER_COLOR, STATUS_TIER_BG } from "@/lib/helpers";
 import { Tagihan } from "@/types";
-import { useAppStore } from "@/store/useAppStore";
 
 interface TagihanCardProps {
   tagihan: Tagihan;
@@ -11,24 +10,21 @@ interface TagihanCardProps {
 }
 
 export default function TagihanCard({ tagihan: t, onShare, onDownload }: TagihanCardProps) {
-  const { activeBulan, activeTahun } = useAppStore();
-  const lunas = t.status === "lunas";
-  const menunggak = !lunas && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun);
+  const isVirtual = !!(t as Tagihan & { _virtual?: boolean })._virtual || t.catatan === "belum-dientry";
+  const tier = getStatusTagihan(t.status, isVirtual);
   const isIuranRata = t.meterAwal === 0 && t.meterAkhir === 0;
 
-  const statusColor = lunas
-    ? "var(--color-lunas)"
-    : menunggak ? "var(--color-belum)" : "var(--color-tunggakan)";
-  const statusBg = lunas
-    ? "rgba(21,128,61,0.12)"
-    : menunggak ? "rgba(185,28,28,0.12)" : "rgba(202,138,4,0.12)";
+  const tierColor = STATUS_TIER_COLOR[tier];
+  const tierBg = STATUS_TIER_BG[tier];
+  const tierLabel = STATUS_TIER_LABEL[tier];
+  const TierIcon = tier === "lunas" ? CheckCircle2 : tier === "ditagih" ? Clock : AlertTriangle;
 
   return (
     <div
       className="card"
       style={{
         padding: "14px 16px",
-        borderLeft: `4px solid ${lunas ? "var(--color-lunas)" : menunggak ? "var(--color-belum)" : "var(--color-tunggakan)"}`,
+        borderLeft: `4px solid ${tierColor}`,
       }}
     >
       {/* Nama + badge */}
@@ -44,10 +40,10 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
         <span style={{
           flexShrink: 0, display: "flex", alignItems: "center", gap: 4,
           fontSize: 13, padding: "3px 8px", borderRadius: 20, fontWeight: 700,
-          background: statusBg, color: statusColor,
+          background: tierBg, color: tierColor,
         }}>
-          {lunas ? <CheckCircle2 size={11} /> : menunggak ? <AlertTriangle size={11} /> : <Clock size={11} />}
-          {lunas ? "Lunas" : menunggak ? "Menunggak" : "Belum"}
+          <TierIcon size={11} />
+          {tierLabel}
         </span>
       </div>
 
@@ -70,7 +66,7 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
         </span>
         <div style={{ fontSize: 13, color: "var(--color-txt3)", textAlign: "right" }}>
           <div>Entry: {formatTanggal(t.tanggalEntry)}</div>
-          {lunas && Boolean(t.tanggalBayar) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
+          {tier === "lunas" && Boolean(t.tanggalBayar) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
         </div>
       </div>
 

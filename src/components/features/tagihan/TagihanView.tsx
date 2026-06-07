@@ -1,9 +1,9 @@
 "use client";
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock, Search, X, Droplets, Filter } from "lucide-react";
+import { CheckCircle2, Clock, Search, X, Droplets, Filter, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { formatRp, isMenunggak } from "@/lib/helpers";
+import { isMenunggak } from "@/lib/helpers";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -88,8 +88,8 @@ export default function TagihanView() {
 
   const membersAktif = members.filter((m) => m.status === "aktif");
   const jumlahLunas = allTagihan.filter((t) => t.status === "lunas").length;
-  const jumlahBelum = allTagihan.filter((t) => t.status === "belum").length;
-  const totalTerkumpul = tagihan.filter((t) => t.status === "lunas").reduce((s, t) => s + t.total, 0);
+  const jumlahDitagih = allTagihan.filter((t) => t.status === "belum" && !(t as Tagihan & { _virtual?: boolean })._virtual && t.catatan !== "belum-dientry").length;
+  const jumlahMenunggak = allTagihan.filter((t) => t.status === "belum" && ((t as Tagihan & { _virtual?: boolean })._virtual || t.catatan === "belum-dientry")).length;
 
   const handleShare = async (t: Tagihan) => {
     try { await shareTagihan(t, settings); }
@@ -114,9 +114,9 @@ export default function TagihanView() {
       {/* Stat row */}
       <div className="row-8">
         {[
-          { label: "Terkumpul", value: formatRp(totalTerkumpul), color: "var(--color-primary)" },
           { label: "Lunas", value: `${jumlahLunas}/${membersAktif.length}`, color: "var(--color-lunas)" },
-          { label: "Belum", value: String(jumlahBelum), color: "var(--color-belum)" },
+          { label: "Ditagih", value: String(jumlahDitagih), color: "var(--color-tunggakan)" },
+          { label: "Menunggak", value: String(jumlahMenunggak), color: "var(--color-belum)" },
         ].map((s) => (
           <div key={s.label} className="card" style={{ flex: 1, padding: "10px 12px", borderLeft: `3px solid ${s.color}` }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", marginBottom: 3 }}>{s.label}</div>
@@ -174,8 +174,9 @@ export default function TagihanView() {
       )}
 
       {/* Hint */}
-      <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 13, color: "var(--color-primary)", fontWeight: 500 }}>
-        💡 Entry pembayaran dilakukan di menu <strong>Entry Bayar</strong>. Belum entry = Belum Bayar otomatis.
+      <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 13, color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+        <Info size={14} style={{ flexShrink: 0 }} />
+        Entry pembayaran via menu <strong>Entry</strong>. Belum dientry otomatis tampil Menunggak jika lewat tgl 25.
       </div>
 
       {/* List */}

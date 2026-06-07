@@ -4,7 +4,7 @@ import { DollarSign, Plus, Trash2, Edit2, History, Zap, Gauge } from "lucide-rea
 import { toast } from "@/lib/toast";
 import { formatRp, formatTanggal } from "@/lib/helpers";
 import { updateSettings, saveHargaHistory, getHargaHistoryList, saveActivityLog } from "@/lib/db";
-import { AppSettings, HargaHistory, UserRole, BlokTarif, TipeBlok, ModeTarif } from "@/types";
+import { AppSettings, HargaHistory, UserRole, BlokTarif, TipeBlok, ModeTarif, ModePembayaran } from "@/types";
 import SettingsSection from "./SettingsSection";
 
 interface TarifSectionProps {
@@ -29,6 +29,7 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [modeTarif, setModeTarif] = useState<ModeTarif>(settings.modeTarif ?? "per_pelanggan");
   const [modeTarifGlobal, setModeTarifGlobal] = useState<"meter" | "rata">(settings.modeTarifGlobal ?? "meter");
+  const [modePembayaran, setModePembayaran] = useState<ModePembayaran>(settings.modePembayaran ?? "per_member");
 
   const initBlok = (): BlokEdit[] => {
     const src = settings.blokTarif && settings.blokTarif.length > 0
@@ -53,6 +54,7 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
       setBloks(initBlok());
       setModeTarif(settings.modeTarif ?? "per_pelanggan");
       setModeTarifGlobal(settings.modeTarifGlobal ?? "meter");
+      setModePembayaran(settings.modePembayaran ?? "per_member");
     }
   }, [settings, editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -112,7 +114,7 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
         try {
           await updateSettings({
             abonemen: a, hargaBlok1: h1, batasBlok: batas, hargaBlok2: h2, blokTarif,
-            modeTarif, modeTarifGlobal,
+            modeTarif, modeTarifGlobal, modePembayaran,
           });
           await saveHargaHistory({
             abonemen: a, hargaBlok1: h1, batasBlok: batas, hargaBlok2: h2, blokTarif,
@@ -333,6 +335,28 @@ export default function TarifSection({ settings, userRole, showConfirm }: TarifS
                 </div>
               </div>
             )}
+
+            {/* Mode Pembayaran */}
+            <div>
+              <label className="section-label">Mode Pembayaran Entry</label>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {([
+                  { val: "per_member" as ModePembayaran, label: "Per Member", desc: "Admin pilih Langsung Lunas atau Catat Tagihan tiap entry" },
+                  { val: "global_lunas" as ModePembayaran, label: "Global — Langsung Lunas", desc: "Semua entry otomatis langsung Lunas" },
+                  { val: "global_tagihan" as ModePembayaran, label: "Global — Catat Tagihan", desc: "Semua entry otomatis Ditagih, tandai lunas terpisah" },
+                ] as { val: ModePembayaran; label: string; desc: string }[]).map((m) => (
+                  <button key={m.val} onClick={() => setModePembayaran(m.val)}
+                    style={{
+                      padding: "11px 14px", borderRadius: 10, border: `1.5px solid ${modePembayaran === m.val ? "var(--color-primary)" : "var(--color-border)"}`,
+                      background: modePembayaran === m.val ? "rgba(3,105,161,0.08)" : "var(--color-bg)",
+                      textAlign: "left", cursor: "pointer",
+                    }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: modePembayaran === m.val ? "var(--color-primary)" : "var(--color-txt)" }}>{m.label}</div>
+                    <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>{m.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div>
               <label className="section-label">Catatan Perubahan (opsional)</label>

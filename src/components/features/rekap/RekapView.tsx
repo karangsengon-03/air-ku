@@ -111,8 +111,9 @@ export default function RekapView() {
   });
 
   const jumlahLunas = filtered.filter((r) => r.status === "lunas").length;
-  const jumlahBelum = filtered.filter((r) => r.status === "belum" && !r.menunggak).length;
   const jumlahMenunggak = filtered.filter((r) => r.menunggak).length;
+  const jumlahDitagih = filtered.filter((r) => r.status === "belum" && !r.menunggak).length;
+  const jumlahBelum = jumlahDitagih + jumlahMenunggak;
   const totalTerkumpul = filtered.filter((r) => r.status === "lunas").reduce((a, r) => a + r.total, 0);
   const totalTagihan = filtered.reduce((a, r) => a + r.total, 0);
   const totalM3 = filtered.reduce((a, r) => a + r.pemakaian, 0);
@@ -256,6 +257,7 @@ export default function RekapView() {
               { label: "Total Tagihan", val: formatRp(totalTagihan), color: "var(--color-txt2)" },
               { label: "Lunas / Total", val: `${jumlahLunas} / ${filtered.length}`, color: "var(--color-lunas)" },
               { label: "Menunggak", val: `${jumlahMenunggak} pelanggan`, color: jumlahMenunggak > 0 ? "var(--color-belum)" : "var(--color-txt3)" },
+              { label: "Ditagih", val: `${jumlahDitagih} pelanggan`, color: jumlahDitagih > 0 ? "var(--color-tunggakan)" : "var(--color-txt3)" },
             ].map((s) => (
               <div key={s.label} className="card" style={{ borderLeft: `3px solid ${s.color}`, padding: "14px 16px" }}>
                 <div className="section-label mb-1">{s.label}</div>
@@ -287,6 +289,7 @@ export default function RekapView() {
             totalTagihan={totalTagihan}
             jumlahLunas={jumlahLunas}
             jumlahBelum={jumlahBelum}
+            jumlahDitagih={jumlahDitagih}
             jumlahMenunggak={jumlahMenunggak}
           />
 

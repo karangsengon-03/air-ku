@@ -10,6 +10,7 @@ import {
   BackupSection,
   InfoAppSection,
   LogoutSection,
+  AlokasiNomorSection,
 } from "./SettingsSections";
 
 export default function SettingsView() {
@@ -29,6 +30,7 @@ export default function SettingsView() {
     <div className="animate-fade-in-up" style={{ display: "flex", flexDirection: "column", gap: 0 }}>
       <TarifSection settings={settings} userRole={userRole} showConfirm={showConfirm} />
       <DusunRTSection settings={settings} showConfirm={showConfirm} />
+      <AlokasiNomorSection showConfirm={showConfirm} />
       <ModeTunggakanSection settings={settings} />
       <InfoOrganisasiSection settings={settings} />
       <AccountsSection />

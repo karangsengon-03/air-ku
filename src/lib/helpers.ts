@@ -227,7 +227,44 @@ export function formatTanggalPanjang(ts: unknown): string {
   }
 }
 
-// ─── Status Tunggakan ────────────────────────────────────────────────────────
+// ─── Status Tagihan 3 Tier ────────────────────────────────────────────────────
+
+export type StatusTier = 'lunas' | 'ditagih' | 'menunggak';
+
+/**
+ * Tentukan status tagihan 3 tier secara konsisten di semua menu.
+ * - lunas: sudah bayar
+ * - ditagih: ada dokumen Firestore, status belum (sudah dientry tapi belum bayar)
+ * - menunggak: tidak ada dokumen / virtual (belum dientry sama sekali)
+ */
+export function getStatusTagihan(
+  status: 'lunas' | 'belum',
+  isVirtual: boolean,
+): StatusTier {
+  if (status === 'lunas') return 'lunas';
+  if (isVirtual) return 'menunggak';
+  return 'ditagih';
+}
+
+export const STATUS_TIER_LABEL: Record<StatusTier, string> = {
+  lunas: 'Lunas',
+  ditagih: 'Ditagih',
+  menunggak: 'Menunggak',
+};
+
+export const STATUS_TIER_COLOR: Record<StatusTier, string> = {
+  lunas: 'var(--color-lunas)',
+  ditagih: 'var(--color-tunggakan)',
+  menunggak: 'var(--color-belum)',
+};
+
+export const STATUS_TIER_BG: Record<StatusTier, string> = {
+  lunas: 'rgba(21,128,61,0.12)',
+  ditagih: 'rgba(202,138,4,0.12)',
+  menunggak: 'rgba(185,28,28,0.12)',
+};
+
+
 
 /**
  * Cek apakah tagihan yang belum bayar sudah melewati batas tanggal 25.
@@ -252,6 +289,30 @@ export function isMenunggak(
 }
 
 
+
+// ─── Nomor Sambungan ─────────────────────────────────────────────────────────
+
+/**
+ * Format nomor sambungan dengan leading zero auto-adjust.
+ * Digit ditentukan oleh nomorAkhir (batas alokasi) agar konsisten.
+ * Minimal 3 digit. Contoh: nomorAkhir=100 → "001","010","100"
+ * nomorAkhir=1000 → "0001","0010","1000"
+ */
+export function formatNomorSambungan(n: number, nomorAkhir: number): string {
+  const digits = Math.max(String(nomorAkhir).length, 3);
+  return String(n).padStart(digits, "0");
+}
+
+/**
+ * Generate daftar semua nomor sambungan dari 1 s/d nomorAkhir.
+ */
+export function generateNomorList(nomorAkhir: number): string[] {
+  const result: string[] = [];
+  for (let i = 1; i <= nomorAkhir; i++) {
+    result.push(formatNomorSambungan(i, nomorAkhir));
+  }
+  return result;
+}
 
 export function getBulanTahunAktif(): { bulan: number; tahun: number } {
   const now = new Date();

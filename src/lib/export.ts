@@ -180,7 +180,7 @@ export async function generatePdfTagihan(
   // ── Status badge ─────────────────────────────────────────────────────────────
   const statusColor: [number, number, number] =
     tagihan.status === "lunas" ? [21, 128, 61] : [185, 28, 28];
-  const statusLabel = tagihan.status === "lunas" ? "✓ LUNAS" : "⏳ BELUM BAYAR";
+  const statusLabel = tagihan.status === "lunas" ? "LUNAS" : tagihan.catatan === "belum-dientry" ? "BELUM DIENTRY" : "DITAGIH - BELUM BAYAR";
 
   doc.setFillColor(...statusColor);
   doc.roundedRect(margin, y, contentW, 8, 2, 2, "F");
@@ -223,12 +223,12 @@ export function buildWaTextTagihan(
     `Yth. *${tagihan.memberNama}*`,
     `No. Sambungan: ${tagihan.memberNomorSambungan}`,
     ``,
-    `📊 *Data Meter*`,
+    `Data Meter`,
     `• Meter Awal : ${formatM3(tagihan.meterAwal)}`,
     `• Meter Akhir: ${formatM3(tagihan.meterAkhir)}`,
     `• Pemakaian  : ${formatM3(tagihan.pemakaian)}`,
     ``,
-    `💰 *Rincian Biaya*`,
+    `Rincian Biaya`,
     `• Abonemen: ${formatRp(tagihan.abonemenSnapshot)}`,
   ];
 
@@ -246,7 +246,7 @@ export function buildWaTextTagihan(
   baris.push(
     ``,
     `*Total: ${formatRp(tagihan.total)}*`,
-    `Status: ${tagihan.status === "lunas" ? "✅ LUNAS" : "❌ BELUM BAYAR"}`,
+    `Status: ${tagihan.status === "lunas" ? "LUNAS" : "BELUM BAYAR"}`,
     ``,
     `No. Tagihan: ${tagihan.nomorTagihan}`
   );
@@ -463,7 +463,7 @@ export async function downloadPdfRekap(
 
     // Status badge color
     doc.setTextColor(isLunas ? 21 : 185, isLunas ? 128 : 28, isLunas ? 61 : 28);
-    doc.text(isLunas ? "✓ Lunas" : "✗ Belum", cols.status.x, y);
+    doc.text(isLunas ? "Lunas" : "Belum Bayar", cols.status.x, y);
     y += 6;
   });
 
@@ -530,7 +530,7 @@ export function buildWaKolektif(
 
   const baris = [
     `*${namaOrganisasi || "PAM Desa"}*`,
-    `💧 Tagihan Air — *${bulanLabel}*`,
+    `Tagihan Air — *${bulanLabel}*`,
     ``,
     `Berikut pelanggan yang *belum membayar*:`,
     ``,

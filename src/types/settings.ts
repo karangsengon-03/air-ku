@@ -9,6 +9,9 @@ export type TipeBlok = 'per_m3' | 'flat';
 /** Mode entry tarif */
 export type ModeTarif = 'per_pelanggan' | 'global';
 
+/** Mode pembayaran saat entry tagihan */
+export type ModePembayaran = 'per_member' | 'global_lunas' | 'global_tagihan';
+
 /** Blok tarif individual dalam sistem multi-blok */
 export interface BlokTarif {
   batasAtas: number | null; // null = tidak terbatas (blok terakhir)
@@ -28,6 +31,8 @@ export interface AppSettings {
   // Mode tarif entry
   modeTarif: ModeTarif;           // 'per_pelanggan' | 'global'
   modeTarifGlobal: 'meter' | 'rata'; // aktif jika modeTarif === 'global'
+  modePembayaran: ModePembayaran; // 'per_member' | 'global_lunas' | 'global_tagihan'
+  nomorSambunganAkhir: number;   // batas atas alokasi nomor sambungan, default 100
   modeTunggakan: ModeTunggakan;
   dusunList: string[];
   rtPerDusun: Record<string, string[]>;
@@ -49,6 +54,8 @@ export const defaultSettings: AppSettings = {
   ],
   modeTarif: 'per_pelanggan',
   modeTarifGlobal: 'meter',
+  modePembayaran: 'per_member',
+  nomorSambunganAkhir: 100,
   modeTunggakan: 'mandiri',
   dusunList: [],
   rtPerDusun: {},

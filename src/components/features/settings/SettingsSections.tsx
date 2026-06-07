@@ -6,10 +6,10 @@
  * InfoOrganisasiSection → InfoOrganisasiSection.tsx
  */
 import { useState, useEffect, useRef } from "react";
-import { UserCog, Info, Download, Upload, LogOut, Users } from "lucide-react";
+import { UserCog, Info, Download, Upload, LogOut, Hash } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { getRoles, exportBackup, importBackup, BackupData, saveActivityLog } from "@/lib/db";
-import { formatTanggal } from "@/lib/helpers";
+import { getRoles, exportBackup, importBackup, BackupData, saveActivityLog, updateSettings } from "@/lib/db";
+import { formatTanggal, formatNomorSambungan } from "@/lib/helpers";
 import { maskEmail } from "@/lib/masking";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -49,7 +49,7 @@ export function AccountsSection() {
                 border: a.email === userRole?.email ? "1.5px solid var(--color-primary)" : "1px solid var(--color-border)",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <Users size={15} style={{ color: "var(--color-txt3)", flexShrink: 0 }} />
+                  <UserCog size={15} style={{ color: "var(--color-txt3)", flexShrink: 0 }} />
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "var(--color-txt)" }}>
                       {maskEmail(a.email)}
@@ -160,6 +160,115 @@ export function InfoAppSection() {
 }
 
 // ── LogoutSection ─────────────────────────────────────────────────────────────
+
+export function AlokasiNomorSection({ showConfirm }: { showConfirm: (title: string, msg: string, fn: () => void, danger?: boolean) => void }) {
+  const { settings, members, userRole } = useAppStore();
+  const nomorAkhirCurrent = settings.nomorSambunganAkhir ?? 100;
+  const [inputAkhir, setInputAkhir] = useState(String(nomorAkhirCurrent));
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!editing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setInputAkhir(String(nomorAkhirCurrent));
+    }
+  }, [nomorAkhirCurrent, editing]);
+
+  const nomorTerpakai = members.map((m) => m.nomorSambungan);
+  const nomorAktifTerbesar = nomorTerpakai.reduce((max, n) => {
+    const num = parseInt(n.replace(/\D/g, "")) || 0;
+    return Math.max(max, num);
+  }, 0);
+
+  const handleSave = () => {
+    const val = parseInt(inputAkhir);
+    if (isNaN(val) || val < 1) { toast.error("Masukkan angka yang valid"); return; }
+    if (val < nomorAktifTerbesar) {
+      toast.error(`Tidak bisa dikurangi — nomor ${formatNomorSambungan(nomorAktifTerbesar, val)} sudah terpakai. Nilai minimal: ${nomorAktifTerbesar}`);
+      return;
+    }
+    showConfirm(
+      "Ubah Alokasi Nomor",
+      `Alokasi nomor sambungan akan diubah menjadi 001–${formatNomorSambungan(val, val)}.\nData pelanggan yang sudah ada tidak terpengaruh.`,
+      async () => {
+        setSaving(true);
+        try {
+          await updateSettings({ nomorSambunganAkhir: val });
+          await saveActivityLog("ubah_alokasi_nomor",
+            `Alokasi nomor sambungan diubah: 001–${formatNomorSambungan(val, val)}`,
+            userRole?.email ?? "", userRole?.role ?? "");
+          toast.success(`Alokasi nomor diperbarui: 001–${formatNomorSambungan(val, val)}`);
+          setEditing(false);
+        } catch { toast.error("Gagal menyimpan"); }
+        finally { setSaving(false); }
+      }
+    );
+  };
+
+  return (
+    <SettingsSection icon={<Hash size={18} />} title="Alokasi Nomor Sambungan">
+      <div style={{ paddingTop: 12 }}>
+        {/* Info saat ini */}
+        <div style={{ background: "var(--color-bg)", borderRadius: 10, padding: "14px 16px", marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: "var(--color-txt2)" }}>Range aktif</span>
+            <span className="mono" style={{ fontSize: 15, fontWeight: 700, color: "var(--color-txt)" }}>
+              001 – {formatNomorSambungan(nomorAkhirCurrent, nomorAkhirCurrent)}
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: "var(--color-txt2)" }}>Total slot</span>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-txt3)" }}>
+              {nomorAkhirCurrent} nomor
+            </span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 13, color: "var(--color-txt2)" }}>Sudah terpakai</span>
+            <span className="mono" style={{ fontSize: 13, fontWeight: 600, color: "var(--color-primary)" }}>
+              {nomorTerpakai.length} nomor
+            </span>
+          </div>
+        </div>
+
+        {editing ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <div>
+              <label className="section-label">Nomor Akhir</label>
+              <input
+                className="input-field mono"
+                type="number"
+                inputMode="numeric"
+                value={inputAkhir}
+                min={nomorAktifTerbesar}
+                onChange={(e) => setInputAkhir(e.target.value)}
+                placeholder={`Min: ${nomorAktifTerbesar}`}
+              />
+              <p style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4, lineHeight: 1.5 }}>
+                Nomor terbesar yang sudah terpakai: <span className="mono" style={{ fontWeight: 700 }}>
+                  {nomorAktifTerbesar > 0 ? formatNomorSambungan(nomorAktifTerbesar, parseInt(inputAkhir) || nomorAkhirCurrent) : "—"}
+                </span>. Nilai minimal harus ≥ {nomorAktifTerbesar || 1}.
+              </p>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button className="btn-secondary" style={{ flex: 1, height: 48 }}
+                onClick={() => setEditing(false)} disabled={saving}>Batal</button>
+              <button className="btn-primary" style={{ flex: 2, height: 48 }}
+                onClick={handleSave} disabled={saving}>
+                {saving ? "Menyimpan..." : "Simpan Alokasi"}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn-secondary" style={{ width: "100%", height: 48 }}
+            onClick={() => setEditing(true)}>
+            <Hash size={15} /> Ubah Alokasi Nomor
+          </button>
+        )}
+      </div>
+    </SettingsSection>
+  );
+}
 
 export function LogoutSection({ showConfirm }: {
   showConfirm: (title: string, msg: string, onConfirm: () => void, destructive?: boolean) => void;

@@ -1,6 +1,6 @@
 "use client";
 import { useState, useCallback, useRef } from "react";
-import { ChevronLeft, CheckCircle2, RefreshCw, Zap, Gauge } from "lucide-react";
+import { ChevronLeft, CheckCircle2, RefreshCw, Zap, Gauge, CreditCard, FileText, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
 import { getLastMeter, saveTagihan, saveActivityLog, getLatestHargaHistoryId, deleteTagihan } from "@/lib/db";
@@ -14,6 +14,7 @@ import EntrySuccess from "./EntrySuccess";
 import EntryAlreadyPaid from "./EntryAlreadyPaid";
 
 type EntryMode = "meter" | "quickpay";
+type StatusEntry = "lunas" | "belum"; // lunas = langsung lunas, belum = catat tagihan dulu
 
 function StepDot({ active, done, label }: { active: boolean; done: boolean; label: string }) {
   return (
@@ -32,6 +33,13 @@ export default function EntryView() {
   const { settings, activeBulan, activeTahun, userRole, showConfirm, members, tagihan } = useAppStore();
   const isAdmin = userRole?.role === "admin";
   const isLocked = settings.globalLock;
+  const modePembayaran = settings.modePembayaran ?? "per_member";
+
+  // StatusEntry: ikuti mode global jika bukan per_member
+  const defaultStatus: StatusEntry =
+    modePembayaran === "global_tagihan" ? "belum" : "lunas";
+  const [statusEntry, setStatusEntry] = useState<StatusEntry>(defaultStatus);
+  const statusIsLocked = modePembayaran !== "per_member"; // jika global, toggle disembunyikan
 
   // Mode awal entry: ikuti setting global jika mode = "global", else bebas pilih
   const defaultMode: EntryMode = settings.modeTarif === "global"
@@ -81,6 +89,7 @@ export default function EntryView() {
     setMeterAwal(""); setMeterAkhir(""); setCatatan("");
     setMeterAwalAuto(false); setSudahAda(null); setSavedResult(null);
     setQpPreset(null); setQpManual("");
+    setStatusEntry(modePembayaran === "global_tagihan" ? "belum" : "lunas"); // reset ke default tiap pilih member baru
 
     const existing = tagihan.find((t) => t.memberId === member.id);
     setSudahAda(existing ?? null);
@@ -101,7 +110,7 @@ export default function EntryView() {
     } else {
       setTimeout(() => qpManualRef.current?.focus(), 100);
     }
-  }, [activeBulan, activeTahun, entryMode, tagihan]);
+  }, [activeBulan, activeTahun, entryMode, tagihan, modePembayaran]);
 
   const handleSimpan = useCallback(async () => {
     if (!selectedMember?.id) return;
@@ -111,13 +120,23 @@ export default function EntryView() {
     if (!isQp && !meterValid) return;
     if (isLocked) { toast.error("Aplikasi sedang dikunci"); return; }
 
+    // Hanya admin yang bisa catat tagihan (belum bayar)
+    const statusFinal: "lunas" | "belum" = (!isAdmin && statusEntry === "belum") ? "lunas" : statusEntry;
+
     const nominalLabel = isQp
       ? (qpIsZero ? "Rp 0 (pelanggan baru)" : formatRp(totalFinal))
       : formatRp(totalFinal);
 
+    const konfirmasiJudul = statusFinal === "lunas"
+      ? "Konfirmasi — Langsung Lunas"
+      : "Konfirmasi — Catat Tagihan";
+
+    const konfirmasiPesan = statusFinal === "lunas"
+      ? `Catat pembayaran LUNAS:\n\nPelanggan: ${selectedMember.nama}\nTotal: ${nominalLabel}\nBulan: ${bulanLabel}\n\nTagihan akan disimpan dengan status LUNAS.`
+      : `Catat tagihan BELUM BAYAR:\n\nPelanggan: ${selectedMember.nama}\nTotal: ${nominalLabel}\nBulan: ${bulanLabel}\n\nStatus: DITAGIH — tandai lunas saat warga membayar.`;
+
     const hargaHistoryId = await getLatestHargaHistoryId() ?? "default";
-    showConfirm("Konfirmasi Entry Bayar",
-      `Entry pembayaran ${selectedMember.nama}\nTotal: ${nominalLabel}`,
+    showConfirm(konfirmasiJudul, konfirmasiPesan,
       async () => {
         setSaving(true);
         try {
@@ -135,14 +154,17 @@ export default function EntryView() {
             subtotalBlok1: isQp ? 0 : (kalkulasi?.subtotalBlok1 ?? 0),
             subtotalBlok2: isQp ? 0 : (kalkulasi?.subtotalBlok2 ?? 0),
             subtotalPemakaian: isQp ? totalFinal : (kalkulasi?.subtotalPemakaian ?? 0),
-            total: totalFinal, status: "lunas",
-            tanggalBayar: new Date(), entryOleh: userRole?.email ?? "",
+            total: totalFinal,
+            status: statusFinal,
+            tanggalBayar: statusFinal === "lunas" ? new Date() : null,
+            entryOleh: userRole?.email ?? "",
             catatan: catatan + (isQp ? " [iuran rata]" : "") + (qpIsZero ? " [pelanggan baru]" : ""),
           });
-          await saveActivityLog("entry_bayar",
-            `${isQp ? "Iuran rata" : "Meter"} ${selectedMember.nama} — ${bulanLabel} — ${nominalLabel} [LUNAS]`,
+          await saveActivityLog(
+            statusFinal === "lunas" ? "entry_bayar" : "entry_tagihan",
+            `${isQp ? "Iuran rata" : "Meter"} ${selectedMember.nama} — ${bulanLabel} — ${nominalLabel} [${statusFinal === "lunas" ? "LUNAS" : "DITAGIH"}]`,
             userRole?.email ?? "", userRole?.role ?? "");
-          toast.success(`${selectedMember.nama} — Entry bayar berhasil!`);
+          toast.success(`${selectedMember.nama} — ${statusFinal === "lunas" ? "Entry lunas berhasil!" : "Tagihan berhasil dicatat!"}`);
           setSavedResult({ nama: selectedMember.nama, total: totalFinal });
           setStep(3);
         } catch (err) {
@@ -151,7 +173,7 @@ export default function EntryView() {
       });
   }, [selectedMember, entryMode, qpNominal, qpValid, qpIsZero, meterValid, kalkulasi,
     meterAwalNum, meterAkhirNum, activeBulan, activeTahun, bulanLabel, settings, catatan,
-    userRole, showConfirm, isLocked]);
+    userRole, showConfirm, isLocked, statusEntry, isAdmin]);
 
   const handleHapus = useCallback(async (t: Tagihan) => {
     if (!isAdmin || isLocked) return;
@@ -308,15 +330,56 @@ export default function EntryView() {
                   onChange={(e) => setCatatan(e.target.value)} />
               </div>
 
+              {/* Toggle Status Entry — per member (admin only) atau info global */}
+              {statusIsLocked ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", borderRadius: 10, border: "1px solid var(--color-border)", background: "var(--color-bg)", fontSize: 13, color: "var(--color-txt3)" }}>
+                  <Info size={14} />
+                  {modePembayaran === "global_lunas" ? "Mode Global: semua entry langsung Lunas" : "Mode Global: semua entry dicatat sebagai Ditagih"}
+                  <span style={{ fontSize: 11, marginLeft: 4 }}>(ubah di Pengaturan)</span>
+                </div>
+              ) : isAdmin ? (
+                <div>
+                  <label style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt3)", display: "block", marginBottom: 6 }}>STATUS PEMBAYARAN</label>
+                  <div style={{ display: "flex", borderRadius: 10, overflow: "hidden", border: "1px solid var(--color-border)" }}>
+                    {([
+                      { val: "lunas" as StatusEntry, label: "Langsung Lunas", icon: <CreditCard size={14} />, color: "var(--color-lunas)" },
+                      { val: "belum" as StatusEntry, label: "Catat Tagihan", icon: <FileText size={14} />, color: "var(--color-tunggakan)" },
+                    ]).map((s) => (
+                      <button key={s.val} onClick={() => setStatusEntry(s.val)}
+                        style={{
+                          flex: 1, padding: "11px 8px", fontSize: 13, fontWeight: 700, border: "none", cursor: "pointer",
+                          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                          background: statusEntry === s.val ? (s.val === "lunas" ? "rgba(21,128,61,0.15)" : "rgba(202,138,4,0.15)") : "var(--color-bg)",
+                          color: statusEntry === s.val ? s.color : "var(--color-txt3)",
+                          borderBottom: statusEntry === s.val ? `2px solid ${s.color}` : "2px solid transparent",
+                        }}>
+                        {s.icon} {s.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 6, lineHeight: 1.5 }}>
+                    {statusEntry === "lunas"
+                      ? "Warga sudah membayar — tagihan langsung tercatat Lunas."
+                      : "Tagihan dicatat dulu — tandai Lunas saat warga membayar."}
+                  </p>
+                </div>
+              ) : null}
+
+              {/* Tombol Simpan */}
               <button
                 className="btn-primary"
-                style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                  background: statusEntry === "belum" ? "var(--color-tunggakan)" : undefined,
+                }}
                 disabled={saving || (entryMode === "quickpay" ? !qpValid : !meterValid) || isLocked}
                 onClick={handleSimpan}
               >
                 {saving
                   ? <><RefreshCw size={16} /> Menyimpan...</>
-                  : <><CheckCircle2 size={16} /> Entry Bayar — Simpan Lunas</>
+                  : statusEntry === "lunas"
+                    ? <><CreditCard size={16} /> Simpan — Langsung Lunas</>
+                    : <><FileText size={16} /> Simpan — Catat Tagihan</>
                 }
               </button>
             </>
