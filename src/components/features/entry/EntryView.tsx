@@ -3,7 +3,7 @@ import { useState, useCallback, useRef } from "react";
 import { ChevronLeft, CheckCircle2, RefreshCw, Zap, Gauge, CreditCard, FileText, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { getLastMeter, saveTagihan, saveActivityLog, getLatestHargaHistoryId, deleteTagihan } from "@/lib/db";
+import { getLastMeter, saveTagihan, saveActivityLog, getLatestHargaHistoryId, deleteTagihan, updateTagihanStatus } from "@/lib/db";
 import { hitungTagihan, formatRp } from "@/lib/helpers";
 import { MONTHS } from "@/lib/constants";
 import { Member, Tagihan } from "@/types";
@@ -191,6 +191,24 @@ export default function EntryView() {
       }, true);
   }, [isAdmin, isLocked, showConfirm, bulanLabel, userRole]);
 
+  const handleTandaiLunasEntry = useCallback(async (t: Tagihan) => {
+    if (!isAdmin || isLocked) return;
+    showConfirm(
+      "Tandai Lunas",
+      `Konfirmasi pembayaran:\n\nPelanggan: ${t.memberNama}\nTagihan: ${formatRp(t.total)}\nBulan: ${bulanLabel}\n\nWarga sudah membayar?`,
+      async () => {
+        try {
+          await updateTagihanStatus(t.id!, "lunas");
+          await saveActivityLog("tandai_lunas",
+            `${t.memberNama} — ${bulanLabel} (${t.nomorTagihan || "manual"})`,
+            userRole?.email ?? "", userRole?.role ?? "");
+          toast.success(`${t.memberNama} — Tandai lunas berhasil!`);
+          setSudahAda({ ...t, status: "lunas" });
+        } catch { toast.error("Gagal memperbarui status."); }
+      }
+    );
+  }, [isAdmin, isLocked, showConfirm, bulanLabel, userRole]);
+
   const handleReset = () => {
     setStep(1); setSelectedMember(null); setSearch("");
     setMeterAwal(""); setMeterAkhir(""); setCatatan("");
@@ -285,6 +303,7 @@ export default function EntryView() {
               sudahAda={sudahAda}
               isAdmin={isAdmin}
               onHapus={handleHapus}
+              onTandaiLunas={handleTandaiLunasEntry}
               onReset={handleReset}
             />
           ) : loadingMeter ? (

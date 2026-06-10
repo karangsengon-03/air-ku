@@ -7,9 +7,10 @@ interface TagihanCardProps {
   tagihan: Tagihan;
   onShare?: (t: Tagihan) => void;
   onDownload?: (t: Tagihan) => void;
+  onTandaiLunas?: (t: Tagihan) => void; // hanya untuk status Ditagih
 }
 
-export default function TagihanCard({ tagihan: t, onShare, onDownload }: TagihanCardProps) {
+export default function TagihanCard({ tagihan: t, onShare, onDownload, onTandaiLunas }: TagihanCardProps) {
   const isVirtual = !!(t as Tagihan & { _virtual?: boolean })._virtual || t.catatan === "belum-dientry";
   const tier = getStatusTagihan(t.status, isVirtual);
   const isIuranRata = t.meterAwal === 0 && t.meterAkhir === 0;
@@ -69,6 +70,22 @@ export default function TagihanCard({ tagihan: t, onShare, onDownload }: Tagihan
           {tier === "lunas" && Boolean(t.tanggalBayar) && <div>Bayar: {formatTanggal(t.tanggalBayar)}</div>}
         </div>
       </div>
+
+      {/* Tandai Lunas — hanya untuk status Ditagih (belum bayar tapi sudah dientry) */}
+      {tier === "ditagih" && onTandaiLunas && (
+        <button
+          onClick={() => onTandaiLunas(t)}
+          style={{
+            width: "100%", height: 48, borderRadius: 8,
+            border: "none", background: "var(--color-lunas)",
+            color: "white", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            fontSize: 13, fontWeight: 700,
+          }}
+        >
+          <CheckCircle2 size={16} /> Tandai Lunas — Warga Sudah Bayar
+        </button>
+      )}
 
       {/* Aksi — hanya tampil untuk tagihan nyata (bukan virtual) */}
       {(onShare || onDownload) && (

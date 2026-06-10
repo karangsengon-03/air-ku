@@ -623,7 +623,7 @@ export async function exportBackup(): Promise<BackupData> {
     });
 
   return {
-    version: "1.0.0",
+    version: process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0",
     exportedAt: new Date().toISOString(),
     members: toArr(membersSnap),
     tagihan: toArr(tagihanSnap),

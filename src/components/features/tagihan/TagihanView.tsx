@@ -3,7 +3,8 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Search, X, Droplets, Filter, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { isMenunggak } from "@/lib/helpers";
+import { isMenunggak, formatRp } from "@/lib/helpers";
+import { updateTagihanStatus, saveActivityLog } from "@/lib/db";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -12,7 +13,8 @@ import TagihanCard from "./TagihanCard";
 type FilterStatus = "semua" | "lunas" | "belum";
 
 export default function TagihanView() {
-  const { tagihan, activeBulan, activeTahun, settings, members } = useAppStore();
+  const { tagihan, activeBulan, activeTahun, settings, members, userRole, showConfirm } = useAppStore();
+  const isAdmin = userRole?.role === "admin";
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
 
@@ -22,52 +24,48 @@ export default function TagihanView() {
     const tagihanIds = new Set(tagihan.map((t) => t.memberId));
     const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
 
-    // Virtual tagihan untuk yang belum di-entry
-    const virtual: Tagihan[] = membersAktif
-      .filter((m) => m.id && !tagihanIds.has(m.id))
-      .map((m) => ({
-        id: `virtual-${m.id}`,
-        memberId: m.id!,
-        memberNama: m.nama,
-        memberNomorSambungan: m.nomorSambungan,
-        memberDusun: m.dusun ?? "",
-          memberRT: m.rt ?? "",
-          bulan: activeBulan,
-          tahun: activeTahun,
-          meterAwal: 0,
-          meterAkhir: 0,
-          pemakaian: 0,
-          subtotalBlok1: 0,
-          subtotalBlok2: 0,
-          subtotalPemakaian: 0,
-          total: 0,
-          hargaHistoryId: "",
-          abonemenSnapshot: settings.abonemen,
-          hargaBlok1Snapshot: settings.hargaBlok1,
-          batasBlokSnapshot: settings.batasBlok,
-          hargaBlok2Snapshot: settings.hargaBlok2,
-          blokTarifSnapshot: settings.blokTarif ?? [],
-          abonemen: settings.abonemen,
-          status: "belum" as const,
-          blokSnapshot: [],
-          tanggal: null,
-          tanggalBayar: null,
-          tanggalEntry: null,
-          entryOleh: "",
-          dibayarOleh: "",
-          diinputOleh: "",
-          nomorTagihan: "",
-          catatan: "belum-dientry",
-          _virtual: true,
-        }));
+    // Virtual entries hanya dibuat jika sudah lewat tgl 25 (menunggak)
+    // Jika belum lewat tgl 25, member yang belum dientry tidak perlu tampil di Tagihan
+    const virtual: Tagihan[] = menunggakBulanIni
+      ? membersAktif
+          .filter((m) => m.id && !tagihanIds.has(m.id))
+          .map((m) => ({
+            id: `virtual-${m.id}`,
+            memberId: m.id!,
+            memberNama: m.nama,
+            memberNomorSambungan: m.nomorSambungan,
+            memberDusun: m.dusun ?? "",
+            memberRT: m.rt ?? "",
+            bulan: activeBulan,
+            tahun: activeTahun,
+            meterAwal: 0, meterAkhir: 0, pemakaian: 0,
+            subtotalBlok1: 0, subtotalBlok2: 0, subtotalPemakaian: 0,
+            total: 0,
+            hargaHistoryId: "",
+            abonemenSnapshot: settings.abonemen,
+            hargaBlok1Snapshot: settings.hargaBlok1,
+            batasBlokSnapshot: settings.batasBlok,
+            hargaBlok2Snapshot: settings.hargaBlok2,
+            blokTarifSnapshot: settings.blokTarif ?? [],
+            abonemen: settings.abonemen,
+            status: "belum" as const,
+            blokSnapshot: [],
+            tanggal: null, tanggalBayar: null, tanggalEntry: null,
+            entryOleh: "", dibayarOleh: "", diinputOleh: "",
+            nomorTagihan: "",
+            catatan: "belum-dientry",
+            _virtual: true,
+          }))
+      : [];
 
-    // Gabung: tagihan nyata + virtual, sort lunas dulu lalu menunggak lalu belum
+    // Gabung: tagihan nyata + virtual, sort: lunas → ditagih → menunggak → nama
     const combined = [...tagihan, ...virtual];
     combined.sort((a, b) => {
-      const aMenunggak = a.status === "belum" && (a.bulan < activeBulan || (a.bulan === activeBulan && menunggakBulanIni));
-      const bMenunggak = b.status === "belum" && (b.bulan < activeBulan || (b.bulan === activeBulan && menunggakBulanIni));
-      const order = (t: Tagihan, m: boolean) => t.status === "lunas" ? 0 : m ? 2 : 1;
-      if (order(a, aMenunggak) !== order(b, bMenunggak)) return order(a, aMenunggak) - order(b, bMenunggak);
+      const aVirtual = (a as Tagihan & { _virtual?: boolean })._virtual || a.catatan === "belum-dientry";
+      const bVirtual = (b as Tagihan & { _virtual?: boolean })._virtual || b.catatan === "belum-dientry";
+      const order = (t: Tagihan, isV: boolean) =>
+        t.status === "lunas" ? 0 : isV ? 2 : 1;
+      if (order(a, aVirtual) !== order(b, bVirtual)) return order(a, aVirtual) - order(b, bVirtual);
       return a.memberNama.localeCompare(b.memberNama, "id");
     });
     return combined;
@@ -99,6 +97,24 @@ export default function TagihanView() {
   const handleDownload = async (t: Tagihan) => {
     try { await downloadPdfTagihan(t, settings); }
     catch { toast.error("Gagal download PDF"); }
+  };
+
+  const handleTandaiLunas = (t: Tagihan) => {
+    showConfirm(
+      "Tandai Lunas",
+      `Konfirmasi pembayaran:\n\nPelanggan: ${t.memberNama}\nTagihan: ${formatRp(t.total)}\nBulan: ${MONTHS[t.bulan - 1]} ${t.tahun}\n\nWarga sudah membayar?`,
+      async () => {
+        try {
+          await updateTagihanStatus(t.id!, "lunas");
+          await saveActivityLog(
+            "tandai_lunas",
+            `${t.memberNama} — ${MONTHS[t.bulan - 1]} ${t.tahun} (${t.nomorTagihan || "manual"})`,
+            userRole?.email ?? "", userRole?.role ?? ""
+          );
+          toast.success(`${t.memberNama} — Tandai lunas berhasil!`);
+        } catch { toast.error("Gagal memperbarui status."); }
+      }
+    );
   };
 
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
@@ -195,6 +211,7 @@ export default function TagihanView() {
               tagihan={t}
               onShare={t.id?.startsWith("virtual-") ? undefined : handleShare}
               onDownload={t.id?.startsWith("virtual-") ? undefined : handleDownload}
+              onTandaiLunas={isAdmin && !t.id?.startsWith("virtual-") ? handleTandaiLunas : undefined}
             />
           ))}
         </div>

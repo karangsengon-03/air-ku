@@ -1,5 +1,14 @@
 export const APP_NAME = "AirKu";
-export const APP_VERSION = "1.0.0";
+/**
+ * Versi app — dibaca otomatis dari package.json via next.config.ts.
+ * Untuk update versi: cukup ubah "version" di package.json saja.
+ *
+ * Skema versi: MAJOR.MINOR.PATCH
+ * - MAJOR: perubahan arsitektur besar / breaking change
+ * - MINOR: fitur baru, penambahan menu, perubahan skema data
+ * - PATCH: bugfix, perbaikan tampilan, tweak kecil
+ */
+export const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "1.0.0";
 export const APP_SUBTITLE = "Sistem Iuran Air Desa";
 
 export const MONTHS = [
