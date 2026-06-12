@@ -1,0 +1,103 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AirKu — Firestore Security Rules
+// Roles: admin | penagih | viewer
+// Viewer: 1 akun bersama (warga@air.ku) — hanya baca data publik
+// ─────────────────────────────────────────────────────────────────────────────
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ─── Helper functions ──────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/roles/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && getUserRole().role == "admin";
+    }
+
+    function isPenagih() {
+      return isSignedIn() && getUserRole().role == "penagih";
+    }
+
+    function isViewer() {
+      return isSignedIn() && getUserRole().role == "viewer";
+    }
+
+    function isValidUser() {
+      return isSignedIn() && getUserRole().role in ["admin", "penagih"];
+    }
+
+    // Admin atau penagih (bukan viewer)
+    function isStaff() {
+      return isSignedIn() && getUserRole().role in ["admin", "penagih"];
+    }
+
+    // ─── /roles/{uid} ─────────────────────────────────────────────────────
+    // Viewer hanya bisa baca dokumen miliknya sendiri (untuk auth check)
+    match /roles/{uid} {
+      allow read: if isSignedIn() && (isAdmin() || request.auth.uid == uid);
+      allow write: if false;
+    }
+
+    // ─── /settings/main ───────────────────────────────────────────────────
+    // Viewer perlu baca settings untuk nama organisasi & kalkulasi
+    match /settings/main {
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
+      allow write: if isAdmin();
+    }
+
+    // ─── /hargaHistory/{id} ───────────────────────────────────────────────
+    // Viewer boleh baca untuk transparansi riwayat tarif
+    match /hargaHistory/{id} {
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
+      allow create, update: if isAdmin();
+      allow delete: if false;
+    }
+
+    // ─── /members/{id} ────────────────────────────────────────────────────
+    // Viewer boleh baca daftar pelanggan (transparan)
+    match /members/{id} {
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── /tagihan/{id} ────────────────────────────────────────────────────
+    // Viewer boleh baca tagihan (transparan)
+    // Viewer TIDAK bisa create/update/delete
+    match /tagihan/{id} {
+      allow read: if isSignedIn() && getUserRole().role in ["admin", "penagih", "viewer"];
+      allow create: if isStaff();
+      allow update: if isStaff();
+      allow delete: if isAdmin();
+    }
+
+    // ─── /operasional/{id} ────────────────────────────────────────────────
+    // Admin only — viewer tidak bisa baca
+    match /operasional/{id} {
+      allow read, write: if isAdmin();
+    }
+
+    // ─── /activityLog/{id} ────────────────────────────────────────────────
+    // Admin only baca — viewer tidak bisa baca log internal
+    // Viewer juga tidak perlu tulis log (tidak ada aksi yang dicatat)
+    match /activityLog/{id} {
+      allow read: if isAdmin();
+      allow create: if isStaff();
+      allow update, delete: if false;
+    }
+
+    // ─── Blokir semua path lain ────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

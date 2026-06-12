@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Rounded square background seperti app icon di gambar -->
+  <rect x="2" y="2" width="96" height="96" rx="22" ry="22" fill="#0369A1"/>
+  <!-- Tetes air putih - bentuk teardrop -->
+  <path d="M50 18 C50 18 30 42 30 57 C30 69 39 78 50 78 C61 78 70 69 70 57 C70 42 50 18 50 18 Z"
+        fill="white" opacity="0.95"/>
+  <!-- Gelombang air kecil di dalam tetes (highlight) -->
+  <ellipse cx="43" cy="52" rx="5" ry="8" fill="#0369A1" opacity="0.25" transform="rotate(-15,43,52)"/>
+</svg>
