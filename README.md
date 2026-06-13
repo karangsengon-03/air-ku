@@ -7,7 +7,7 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 
 ## Versi Terkini
 
-**v1.3.1** — Juni 2026
+**v1.3.2** — Juni 2026
 
 ---
 
@@ -159,6 +159,7 @@ Versi otomatis dibaca dari `package.json` → tampil di Header dan halaman Penga
 
 | Versi | Tanggal | Ringkasan |
 |---|---|---|
+| **1.3.2** | Jun 2026 | Fix hint teks Tagihan, fix export backup tidak terdownload |
 | **1.3.1** | Jun 2026 | Fix email viewer, konsistensi BottomNav icon/teks |
 | **1.3.0** | Jun 2026 | Status 3 tier (Lunas/Ditagih/Menunggak), mode pembayaran, nomor sambungan dropdown, alokasi nomor di Pengaturan, sistem versi otomatis |
 | **1.2.0** | Jun 2026 | Role Viewer (warga), tarif flat/per m³ multi-blok, logika tunggakan tgl 25, virtual entries |

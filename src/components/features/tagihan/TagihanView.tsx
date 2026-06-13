@@ -192,7 +192,7 @@ export default function TagihanView() {
       {/* Hint */}
       <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 13, color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
         <Info size={14} style={{ flexShrink: 0 }} />
-        Entry pembayaran via menu <strong>Entry</strong>. Belum dientry otomatis tampil Menunggak jika lewat tgl 25.
+        <span>Catat pembayaran via menu <strong>Entry</strong>. Lewat tgl 25 tanpa entry otomatis jadi <strong>Menunggak</strong>.</span>
       </div>
 
       {/* List */}

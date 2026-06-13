@@ -86,7 +86,18 @@ export function BackupSection({ showConfirm }: {
   const handleExport = async () => {
     setExportLoading(true);
     try {
-      await exportBackup();
+      const data = await exportBackup();
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const tanggal = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      a.href = url;
+      a.download = `airku-backup-${tanggal}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
       toast.success("Backup berhasil diunduh.");
     } catch { toast.error("Gagal membuat backup"); }
     finally { setExportLoading(false); }
