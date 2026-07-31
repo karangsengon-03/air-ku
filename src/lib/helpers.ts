@@ -1,4 +1,4 @@
-import { AppSettings, BlokTarif, BlokSnapshot } from "@/types";
+import { AppSettings, BlokTarif, BlokSnapshot, Member } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
 // ─── Kalkulasi Tagihan ───────────────────────────────────────────────────────
@@ -286,6 +286,58 @@ export function isMenunggak(
     return new Date().getDate() >= 25;
   }
   return false;
+}
+
+// ─── Periode Terdaftar Member (Sumber Kebenaran Tunggal) ─────────────────────
+
+/**
+ * Ambil bulan & tahun member didaftarkan, dari field createdAt (Firestore Timestamp,
+ * object {seconds}, atau Date). Return null jika createdAt tidak ada / tidak valid
+ * (data lama dari sebelum field ini ada) — konsumen fungsi ini harus menganggap
+ * null berarti "tidak ada batas, loloskan" agar konsisten dengan perilaku lama.
+ *
+ * INI SATU-SATUNYA TEMPAT parsing createdAt member dilakukan. Jangan duplikasi
+ * logic ini di komponen lain — panggil fungsi ini atau isMemberTerdaftarSaatPeriode.
+ */
+export function getMemberStartPeriode(
+  member: Pick<Member, "createdAt">
+): { bulan: number; tahun: number } | null {
+  const { createdAt } = member;
+  if (!createdAt) return null;
+
+  let date: Date | null = null;
+  if (createdAt instanceof Timestamp) {
+    date = createdAt.toDate();
+  } else if (createdAt instanceof Date) {
+    date = createdAt;
+  } else if (typeof createdAt === "object" && "seconds" in createdAt) {
+    date = new Date((createdAt as { seconds: number }).seconds * 1000);
+  }
+  if (!date) return null;
+
+  return { bulan: date.getMonth() + 1, tahun: date.getFullYear() };
+}
+
+/**
+ * Cek apakah member sudah terdaftar pada bulan/tahun tertentu — dipakai untuk
+ * memastikan pelanggan baru tidak dianggap menunggak / belum-dientry untuk
+ * bulan-bulan SEBELUM dia terdaftar, konsisten di semua menu (Tagihan, Rekap,
+ * Beranda, Tunggakan).
+ *
+ * Jika member tidak punya createdAt (data lama), selalu return true (loloskan) —
+ * tidak ada cukup informasi untuk membatasi, jadi perilaku default aman adalah
+ * memperlakukannya seperti member yang sudah lama terdaftar.
+ */
+export function isMemberTerdaftarSaatPeriode(
+  member: Pick<Member, "createdAt">,
+  bulan: number,
+  tahun: number
+): boolean {
+  const start = getMemberStartPeriode(member);
+  if (!start) return true; // data lama tanpa createdAt — loloskan
+  if (tahun < start.tahun) return false;
+  if (tahun === start.tahun && bulan < start.bulan) return false;
+  return true;
 }
 
 

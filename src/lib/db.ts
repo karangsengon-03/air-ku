@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Tagihan, Member, ActivityLog } from "@/types";
-import { buildNomorTagihan } from "@/lib/helpers";
+import { buildNomorTagihan, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
 import { MAX_LOG_ENTRIES } from "@/lib/constants";
 
 // ─── Members ─────────────────────────────────────────────────────────────────
@@ -257,20 +257,13 @@ export async function getTagihanBelumBayarSebelumBulanIni(
   const todayDate = new Date().getDate(); // 1–31
   const sudahLewatTanggal25 = todayDate >= 25;
 
-  // Map memberId → { bulan, tahun } saat terdaftar
-  const memberCreatedMap = new Map<string, { bulan: number; tahun: number }>();
+  // Map memberId → Member, untuk cek kapan member terdaftar (createdAt).
+  // Parsing createdAt dilakukan di satu tempat (isMemberTerdaftarSaatPeriode di
+  // helpers.ts) supaya konsisten dengan Tagihan/Rekap/Beranda/Tunggakan.
+  const memberMap = new Map<string, Member>();
   if (members && members.length > 0) {
     for (const m of members) {
-      if (!m.createdAt) continue;
-      let d: Date;
-      if (m.createdAt instanceof Date) {
-        d = m.createdAt;
-      } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
-        d = new Date((m.createdAt as { seconds: number }).seconds * 1000);
-      } else {
-        continue;
-      }
-      memberCreatedMap.set(m.id!, { bulan: d.getMonth() + 1, tahun: d.getFullYear() });
+      if (m.id) memberMap.set(m.id, m);
     }
   }
 
@@ -285,14 +278,13 @@ export async function getTagihanBelumBayarSebelumBulanIni(
 
     if (!isSebelumBulanAktif && !isAktifDanLewat) return false;
 
-    // Pelanggan hanya wajib bayar mulai bulan dia terdaftar
-    // Jika tidak ada di map (data lama tanpa createdAt), loloskan
-    const created = memberCreatedMap.get(t.memberId);
-    if (created) {
-      if (
-        t.tahun < created.tahun ||
-        (t.tahun === created.tahun && t.bulan < created.bulan)
-      ) return false;
+    // Pelanggan hanya wajib bayar mulai bulan dia terdaftar.
+    // Jika member tidak ditemukan di memberMap (data lama tanpa createdAt,
+    // member sudah dihapus, atau daftar members tidak di-pass), filter ini
+    // dilewati sepenuhnya — tagihan tetap dianggap valid (tidak difilter).
+    const member = memberMap.get(t.memberId);
+    if (member && !isMemberTerdaftarSaatPeriode(member, t.bulan, t.tahun)) {
+      return false;
     }
 
     return true;

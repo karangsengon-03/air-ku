@@ -10,14 +10,20 @@ import { useAppStore } from "@/store/useAppStore";
  * Semua view baca dari store → tidak ada delay/loading per-halaman.
  */
 export function useData() {
-  const { activeBulan, activeTahun, setMembers, setTagihan, firebaseUser } = useAppStore();
+  const { activeBulan, activeTahun, setMembers, resetMembers, setTagihan, firebaseUser } = useAppStore();
 
   // Members — subscribe sekali saat login, unsubscribe saat logout
   useEffect(() => {
     if (!firebaseUser) return;
     const unsub = listenMembers((data) => setMembers(data));
-    return () => unsub();
-  }, [firebaseUser, setMembers]);
+    return () => {
+      unsub();
+      // Reset membersLoaded juga — supaya sesi login berikutnya (ganti akun
+      // tanpa refresh browser) tidak keliru menganggap data member masih valid
+      // sebelum listener baru benar-benar menerima data.
+      resetMembers();
+    };
+  }, [firebaseUser, setMembers, resetMembers]);
 
   // Tagihan — re-subscribe saat bulan/tahun aktif berubah
   useEffect(() => {

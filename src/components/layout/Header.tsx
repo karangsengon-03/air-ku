@@ -131,7 +131,11 @@ export default function Header({ title }: HeaderProps) {
                     {/* Info akun */}
                     <div style={{ padding: "6px 10px 10px", borderBottom: "1px solid var(--color-border)", marginBottom: 6 }}>
                       <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-txt)" }}>{userRole.nama}</div>
-                      <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>{maskEmail(userRole.email)}</div>
+                      <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 2 }}>
+                        {userRole.role === "viewer"
+                          ? "Akun Warga (hanya lihat)"
+                          : maskEmail(userRole.email)}
+                      </div>
                       <div style={{
                         display: "inline-block", marginTop: 4, fontSize: 11, fontWeight: 700,
                         padding: "2px 8px", borderRadius: 20,

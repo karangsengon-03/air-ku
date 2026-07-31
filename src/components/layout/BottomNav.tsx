@@ -128,12 +128,11 @@ export default function BottomNav() {
             <Link key={href} href={href} style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              gap: 2, color: active ? "var(--color-primary)" : "var(--color-txt3)",
-              textDecoration: "none",
+              gap: 3, color: active ? "var(--color-primary)" : "var(--color-txt3)",
+              textDecoration: "none", paddingBottom: 2,
             }}>
-              <Icon size={21} strokeWidth={active ? 2.5 : 1.8} />
-              {/* #19 Fix: 10px → 13px */}
-              <span style={{ fontSize: 13, fontWeight: active ? 700 : 500 }}>{label}</span>
+              <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+              <span style={{ fontSize: 11, fontWeight: active ? 700 : 500, lineHeight: 1 }}>{label}</span>
             </Link>
           );
         })}
@@ -144,13 +143,13 @@ export default function BottomNav() {
             style={{
               flex: 1, display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              gap: 2, background: "none", border: "none", cursor: "pointer",
+              gap: 3, background: "none", border: "none", cursor: "pointer",
               color: (showMore || activeInMore) ? "var(--color-primary)" : "var(--color-txt3)",
+              paddingBottom: 2,
             }}
           >
-            <Grid3x3 size={21} strokeWidth={(showMore || activeInMore) ? 2.5 : 1.8} />
-            {/* #19 Fix: 10px → 13px */}
-            <span style={{ fontSize: 13, fontWeight: (showMore || activeInMore) ? 700 : 500 }}>Lainnya</span>
+            <Grid3x3 size={22} strokeWidth={(showMore || activeInMore) ? 2.5 : 1.8} />
+            <span style={{ fontSize: 11, fontWeight: (showMore || activeInMore) ? 700 : 500, lineHeight: 1 }}>Lainnya</span>
           </button>
         )}
       </nav>

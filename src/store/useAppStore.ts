@@ -52,7 +52,9 @@ interface AppState {
 
   // Data cache
   members: Member[];
+  membersLoaded: boolean;
   setMembers: (members: Member[]) => void;
+  resetMembers: () => void;
   tagihan: Tagihan[];
   setTagihan: (tagihan: Tagihan[]) => void;
 }
@@ -111,7 +113,11 @@ export const useAppStore = create<AppState>((set) => ({
 
   // Data cache
   members: [],
-  setMembers: (members) => set({ members }),
+  membersLoaded: false,
+  setMembers: (members) => set({ members, membersLoaded: true }),
+  // Dipanggil saat logout / listener members berhenti — supaya sesi
+  // login berikutnya tidak keliru menganggap data lama masih valid.
+  resetMembers: () => set({ members: [], membersLoaded: false }),
   tagihan: [],
   setTagihan: (tagihan) => set({ tagihan }),
 }));

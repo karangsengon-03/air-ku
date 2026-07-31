@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Search, X, Droplets, Filter, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { isMenunggak, formatRp } from "@/lib/helpers";
+import { isMenunggak, isMemberTerdaftarSaatPeriode, formatRp } from "@/lib/helpers";
 import { updateTagihanStatus, saveActivityLog } from "@/lib/db";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
@@ -29,6 +29,9 @@ export default function TagihanView() {
     const virtual: Tagihan[] = menunggakBulanIni
       ? membersAktif
           .filter((m) => m.id && !tagihanIds.has(m.id))
+          // Jangan tampilkan sebagai "belum dientry" jika member belum terdaftar
+          // pada bulan/tahun yang sedang dibuka (mis. lihat bulan sebelum dia daftar)
+          .filter((m) => isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun))
           .map((m) => ({
             id: `virtual-${m.id}`,
             memberId: m.id!,
@@ -84,7 +87,11 @@ export default function TagihanView() {
     return true;
   });
 
-  const membersAktif = members.filter((m) => m.status === "aktif");
+  // Denominator "Lunas: X/Y" hanya menghitung member yang sudah terdaftar pada
+  // bulan/tahun ini — pelanggan yang baru daftar bulan depan tidak ikut dihitung.
+  const membersAktif = members.filter(
+    (m) => m.status === "aktif" && isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
+  );
   const jumlahLunas = allTagihan.filter((t) => t.status === "lunas").length;
   const jumlahDitagih = allTagihan.filter((t) => t.status === "belum" && !(t as Tagihan & { _virtual?: boolean })._virtual && t.catatan !== "belum-dientry").length;
   const jumlahMenunggak = allTagihan.filter((t) => t.status === "belum" && ((t as Tagihan & { _virtual?: boolean })._virtual || t.catatan === "belum-dientry")).length;
@@ -192,7 +199,7 @@ export default function TagihanView() {
       {/* Hint */}
       <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 13, color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
         <Info size={14} style={{ flexShrink: 0 }} />
-        Entry pembayaran via menu <strong>Entry</strong>. Belum dientry otomatis tampil Menunggak jika lewat tgl 25.
+        <span>Catat pembayaran via menu <strong>Entry</strong>. Lewat tgl 25 tanpa entry otomatis jadi <strong>Menunggak</strong>.</span>
       </div>
 
       {/* List */}

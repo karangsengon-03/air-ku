@@ -9,7 +9,7 @@ import {
   updateTagihanStatus,
   saveActivityLog,
 } from "@/lib/db";
-import { formatRp, isMenunggak } from "@/lib/helpers";
+import { formatRp, isMenunggak, getMemberStartPeriode } from "@/lib/helpers";
 import { shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -18,7 +18,7 @@ import TunggakanGroupCard, { TunggakanGroup, groupTunggakan } from "./TunggakanG
 import TunggakanSummary from "./TunggakanSummary";
 
 export default function TunggakanView() {
-  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, members } =
+  const { settings, activeBulan, activeTahun, firebaseUser, userRole, showConfirm, members, membersLoaded } =
     useAppStore();
 
   const isLocked = settings.globalLock;
@@ -26,10 +26,34 @@ export default function TunggakanView() {
 
   const [tunggakan, setTunggakan] = useState<Tagihan[]>([]);
   const [loading, setLoading] = useState(true);
+  // Fallback jika membersLoaded tak kunjung true (mis. koneksi bermasalah) —
+  // supaya halaman tidak terjebak loading selamanya. Dalam kondisi normal,
+  // membersLoaded sudah true dalam hitungan detik dan flag ini tidak terpakai.
+  const [forceProceed, setForceProceed] = useState(false);
+
+  useEffect(() => {
+    if (!firebaseUser || membersLoaded) return;
+    const timer = setTimeout(() => setForceProceed(true), 8000);
+    return () => {
+      clearTimeout(timer);
+      // Reset saat membersLoaded akhirnya true, atau user logout — supaya
+      // forceProceed tidak "nyangkut" true untuk sesi login berikutnya.
+      setForceProceed(false);
+    };
+  }, [membersLoaded, firebaseUser]);
 
   const fetchTunggakan = useCallback(
     async (signal?: AbortSignal) => {
       if (!firebaseUser) return;
+      // Jangan hitung tunggakan sebelum data member selesai dimuat — kalau
+      // dipaksa jalan dengan members=[] (belum ter-load), filter "member baru
+      // tidak dianggap menunggak sebelum terdaftar" gagal total untuk sesaat
+      // (loading tetap true, jadi UI tidak sempat tampilkan hasil yang salah).
+      // forceProceed adalah jalan keluar terakhir jika load gagal terus-menerus.
+      if (!membersLoaded && !forceProceed) return;
+      if (!membersLoaded && forceProceed) {
+        toast.info("Data pelanggan lambat dimuat — menampilkan hasil sementara.");
+      }
       setLoading(true);
       try {
         // 1. Ambil semua tagihan yang sudah pernah di-entry (semua status, semua bulan)
@@ -50,21 +74,11 @@ export default function TunggakanView() {
         membersAktif.forEach((m) => {
           if (!m.id) return;
 
-          // Bulan mulai dari createdAt member
-          let startBulan = activeBulan;
-          let startTahun = activeTahun;
-          if (m.createdAt) {
-            let createdDate: Date | null = null;
-            if (m.createdAt instanceof Date) {
-              createdDate = m.createdAt;
-            } else if (typeof m.createdAt === "object" && "seconds" in (m.createdAt as object)) {
-              createdDate = new Date((m.createdAt as { seconds: number }).seconds * 1000);
-            }
-            if (createdDate) {
-              startBulan = createdDate.getMonth() + 1;
-              startTahun = createdDate.getFullYear();
-            }
-          }
+          // Bulan mulai dari createdAt member (fallback ke bulan aktif jika createdAt
+          // tidak ada/tidak valid — konsisten dengan getMemberStartPeriode di helpers.ts)
+          const start = getMemberStartPeriode(m);
+          const startBulan = start?.bulan ?? activeBulan;
+          const startTahun = start?.tahun ?? activeTahun;
 
           // Iterasi semua bulan dari terdaftar s/d bulan aktif (tanpa batas)
           let y = startTahun;
@@ -118,7 +132,7 @@ export default function TunggakanView() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [activeBulan, activeTahun, firebaseUser, members, settings]
+    [activeBulan, activeTahun, firebaseUser, members, membersLoaded, forceProceed, settings]
   );
 
   useEffect(() => {

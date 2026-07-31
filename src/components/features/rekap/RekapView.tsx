@@ -4,14 +4,14 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Droplets, Download, Share2, Filter, Printer } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getTagihanRekap, getTotalOperasional } from "@/lib/db";
-import { formatRp, isMenunggak } from "@/lib/helpers";
+import { formatRp, isMenunggak, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
 import { downloadPdfRekap, buildWaKolektif, RekapRow } from "@/lib/export";
 import { MONTHS, YEARS } from "@/lib/constants";
 import RekapTable from "./RekapTable";
 import { toast } from "@/lib/toast";
 
 export default function RekapView() {
-  const { settings, activeBulan, activeTahun, setActiveBulanTahun, userRole, firebaseUser, members } = useAppStore();
+  const { settings, activeBulan, activeTahun, setActiveBulanTahun, userRole, firebaseUser, members, membersLoaded } = useAppStore();
   const isAdmin = userRole?.role === "admin";
 
   const [rows, setRows] = useState<RekapRow[]>([]);
@@ -21,9 +21,25 @@ export default function RekapView() {
   const [filterRT, setFilterRT] = useState("__semua__");
   const [showBulanPicker, setShowBulanPicker] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  // Fallback jika membersLoaded tak kunjung true (mis. koneksi bermasalah) —
+  // supaya halaman tidak terjebak loading selamanya.
+  const [forceProceed, setForceProceed] = useState(false);
+
+  useEffect(() => {
+    if (!firebaseUser || membersLoaded) return;
+    const timer = setTimeout(() => setForceProceed(true), 8000);
+    return () => {
+      clearTimeout(timer);
+      setForceProceed(false);
+    };
+  }, [membersLoaded, firebaseUser]);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!firebaseUser) return;
+    // Jangan gabung member+tagihan sebelum data member selesai dimuat — kalau
+    // dipaksa jalan dengan members=[] (belum ter-load), rekap akan tampil
+    // kosong/salah untuk sesaat sebelum data yang benar menimpanya.
+    if (!membersLoaded && !forceProceed) return;
     setLoading(true);
     try {
       const [tagihan, ops] = await Promise.all([
@@ -38,39 +54,49 @@ export default function RekapView() {
       // Join: semua member aktif + tagihan yang ada
       const membersAktif = members.filter((m) => m.status === "aktif");
 
-      const rows: RekapRow[] = membersAktif.map((m) => {
-        const t = tagihanMap.get(m.id!);
-        if (t) {
-          // Sudah di-entry (lunas)
-          return {
-            nama: t.memberNama,
-            nomorSambungan: t.memberNomorSambungan,
-            dusun: t.memberDusun,
-            rt: t.memberRT,
-            pemakaian: t.pemakaian,
-            total: t.total,
-            status: t.status,
-            bulan: t.bulan,
-            tahun: t.tahun,
-            menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
-          };
-        } else {
-          // Belum di-entry = belum bayar
-          const menunggak = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
-          return {
-            nama: m.nama,
-            nomorSambungan: m.nomorSambungan,
-            dusun: m.dusun ?? "",
-            rt: m.rt ?? "",
-            pemakaian: 0,
-            total: 0,
-            status: "belum" as const,
-            bulan: activeBulan,
-            tahun: activeTahun,
-            menunggak,
-          };
-        }
-      });
+      const rows: RekapRow[] = membersAktif
+        .filter((m) => {
+          // Member yang BELUM punya tagihan tercatat untuk bulan ini, dan belum
+          // terdaftar pada bulan/tahun rekap ini, dikecualikan dari rekap —
+          // rekap bulan Mei tidak boleh menampilkan pelanggan yang baru daftar Juli.
+          // Jika sudah ada tagihan tercatat (tagihanMap punya entrinya), member tetap
+          // ditampilkan apa adanya — itu transaksi nyata yang sudah terjadi.
+          if (tagihanMap.has(m.id!)) return true;
+          return isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun);
+        })
+        .map((m) => {
+          const t = tagihanMap.get(m.id!);
+          if (t) {
+            // Sudah di-entry (lunas)
+            return {
+              nama: t.memberNama,
+              nomorSambungan: t.memberNomorSambungan,
+              dusun: t.memberDusun,
+              rt: t.memberRT,
+              pemakaian: t.pemakaian,
+              total: t.total,
+              status: t.status,
+              bulan: t.bulan,
+              tahun: t.tahun,
+              menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
+            };
+          } else {
+            // Belum di-entry = belum bayar
+            const menunggak = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+            return {
+              nama: m.nama,
+              nomorSambungan: m.nomorSambungan,
+              dusun: m.dusun ?? "",
+              rt: m.rt ?? "",
+              pemakaian: 0,
+              total: 0,
+              status: "belum" as const,
+              bulan: activeBulan,
+              tahun: activeTahun,
+              menunggak,
+            };
+          }
+        });
 
       // Sort: lunas dulu, lalu belum, lalu menunggak — dalam tiap grup sort by nama
       rows.sort((a, b) => {
@@ -87,7 +113,7 @@ export default function RekapView() {
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
-  }, [activeBulan, activeTahun, firebaseUser, members]);
+  }, [activeBulan, activeTahun, firebaseUser, members, membersLoaded, forceProceed]);
 
   // #20 Fix: AbortController cleanup untuk mencegah state update setelah unmount
   useEffect(() => {

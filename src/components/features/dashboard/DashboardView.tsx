@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { Droplets, CheckCircle2, Clock, AlertTriangle, TrendingUp, ArrowRight, WifiOff } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getTotalOperasional } from "@/lib/db";
-import { formatRp, formatM3 } from "@/lib/helpers";
+import { formatRp, formatM3, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
 import { MONTHS } from "@/lib/constants";
 
 function DonutChart({ lunas, belum }: { lunas: number; belum: number }) {
@@ -44,7 +44,11 @@ export default function DashboardView() {
   const ditagih = tagihan.filter((t) => t.status === "belum"); // sudah di-entry, belum bayar
   const membersAktif = members.filter((m) => m.status === "aktif");
   const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
-  const membersBelumInput = membersAktif.filter((m) => m.id && !memberIdsDiinput.has(m.id));
+  // "Belum dientry" hanya berlaku untuk member yang sudah terdaftar pada bulan
+  // aktif ini — pelanggan yang baru daftar bulan depan tidak dihitung di sini.
+  const membersBelumInput = membersAktif.filter(
+    (m) => m.id && !memberIdsDiinput.has(m.id) && isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
+  );
   // Total belum bayar = yang ditagih + yang belum dientry sama sekali
   const totalBelumCount = ditagih.length + membersBelumInput.length;
   const totalTerkumpul = lunas.reduce((s, t) => s + t.total, 0);

@@ -3,6 +3,7 @@
 // Jalankan: npm test
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { Timestamp } from "firebase/firestore";
 import {
   formatRp,
   formatM3,
@@ -13,6 +14,9 @@ import {
   hitungTagihan,
   buildNomorTagihan,
   getBulanTahunAktif,
+  isMenunggak,
+  getMemberStartPeriode,
+  isMemberTerdaftarSaatPeriode,
 } from "../helpers";
 
 // ─── Mock firebase/firestore ─────────────────────────────────────────────────
@@ -294,5 +298,114 @@ describe("getBulanTahunAktif", () => {
     expect(bulan).toBe(3);
     expect(tahun).toBe(2025);
     vi.useRealTimers();
+  });
+});
+
+// ─── isMenunggak ─────────────────────────────────────────────────────────────
+describe("isMenunggak", () => {
+  it("bulan tagihan sebelum bulan aktif (tahun sama) selalu menunggak", () => {
+    expect(isMenunggak(5, 2026, 7, 2026)).toBe(true);
+  });
+
+  it("tahun tagihan sebelum tahun aktif selalu menunggak", () => {
+    expect(isMenunggak(12, 2025, 1, 2026)).toBe(true);
+  });
+
+  it("bulan tagihan setelah bulan aktif (tahun sama) tidak menunggak", () => {
+    expect(isMenunggak(8, 2026, 7, 2026)).toBe(false);
+  });
+
+  it("bulan aktif, sebelum tanggal 25 → belum menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-20"));
+    expect(isMenunggak(7, 2026, 7, 2026)).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif, tepat tanggal 25 → sudah menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-25"));
+    expect(isMenunggak(7, 2026, 7, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif, setelah tanggal 25 → menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-28"));
+    expect(isMenunggak(7, 2026, 7, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+});
+
+// ─── getMemberStartPeriode ───────────────────────────────────────────────────
+describe("getMemberStartPeriode", () => {
+  it("null jika createdAt tidak ada (undefined)", () => {
+    expect(getMemberStartPeriode({ createdAt: undefined })).toBeNull();
+  });
+
+  it("null jika createdAt null", () => {
+    expect(getMemberStartPeriode({ createdAt: null })).toBeNull();
+  });
+
+  it("membaca instance Timestamp Firestore dengan benar", () => {
+    const date = new Date(2026, 2, 5); // 5 Maret 2026
+    const ts = Timestamp.fromDate(date);
+    const result = getMemberStartPeriode({ createdAt: ts });
+    expect(result).toEqual({ bulan: 3, tahun: 2026 });
+  });
+
+  it("membaca object {seconds} (bentuk timestamp-like) dengan benar", () => {
+    const date = new Date(2026, 6, 10); // 10 Juli 2026 (bulan 0-indexed di constructor Date)
+    const result = getMemberStartPeriode({ createdAt: makeTimestampLike(date) });
+    expect(result).toEqual({ bulan: 7, tahun: 2026 });
+  });
+
+  it("membaca instance Date langsung dengan benar", () => {
+    const date = new Date(2026, 4, 15); // 15 Mei 2026
+    const result = getMemberStartPeriode({ createdAt: date });
+    expect(result).toEqual({ bulan: 5, tahun: 2026 });
+  });
+
+  it("menangani pergantian tahun dengan benar (Desember)", () => {
+    const date = new Date(2025, 11, 31); // 31 Des 2025
+    const result = getMemberStartPeriode({ createdAt: makeTimestampLike(date) });
+    expect(result).toEqual({ bulan: 12, tahun: 2025 });
+  });
+});
+
+// ─── isMemberTerdaftarSaatPeriode ────────────────────────────────────────────
+describe("isMemberTerdaftarSaatPeriode", () => {
+  // Kasus nyata yang dilaporkan: H.saini & Sandiono terdaftar Juli 2026, tapi
+  // sempat tampil "Menunggak" di Tagihan/Rekap/Beranda bulan Mei 2026 —
+  // ini kumpulan test yang memastikan skenario itu tidak terulang.
+  const createdAtJuli2026 = makeTimestampLike(new Date(2026, 6, 10));
+
+  it("bulan pendaftaran itu sendiri dianggap sudah terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 7, 2026)).toBe(true);
+  });
+
+  it("bulan sebelum pendaftaran (tahun sama) dianggap BELUM terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 6, 2026)).toBe(false);
+  });
+
+  it("bulan jauh sebelum pendaftaran (kasus nyata: Mei vs daftar Juli) dianggap BELUM terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 5, 2026)).toBe(false);
+  });
+
+  it("bulan setelah pendaftaran dianggap sudah terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 8, 2026)).toBe(true);
+  });
+
+  it("tahun sebelum tahun pendaftaran dianggap BELUM terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 12, 2025)).toBe(false);
+  });
+
+  it("tahun setelah tahun pendaftaran dianggap sudah terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: createdAtJuli2026 }, 1, 2027)).toBe(true);
+  });
+
+  it("member tanpa createdAt (data lama) selalu dianggap sudah terdaftar", () => {
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: null }, 1, 2020)).toBe(true);
+    expect(isMemberTerdaftarSaatPeriode({ createdAt: undefined }, 1, 2020)).toBe(true);
   });
 });
