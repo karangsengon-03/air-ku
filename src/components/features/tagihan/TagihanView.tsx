@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Clock, Search, X, Droplets, Filter, Info } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
-import { isMenunggak, isMemberTerdaftarSaatPeriode, formatRp } from "@/lib/helpers";
+import { isMenunggak, isMemberTerdaftarSaatPeriode, formatRp, getBulanTahunAktif } from "@/lib/helpers";
 import { updateTagihanStatus, saveActivityLog } from "@/lib/db";
 import { downloadPdfTagihan, shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
@@ -18,11 +18,31 @@ export default function TagihanView() {
   const [filter, setFilter] = useState<FilterStatus>("semua");
   const [search, setSearch] = useState("");
 
+  // Bulan/tahun SUNGGUHAN sekarang — titik referensi untuk isMenunggak() di
+  // seluruh komponen ini, independen dari activeBulan/activeTahun (bulan yang
+  // sedang DILIHAT, yang bisa saja bulan lampau).
+  const { bulan: bulanSekarang, tahun: tahunSekarang } = getBulanTahunAktif();
+
   // Gabungkan tagihan yang ada + virtual entries untuk member belum di-entry
   const allTagihan = useMemo(() => {
     const membersAktif = members.filter((m) => m.status === "aktif");
     const tagihanIds = new Set(tagihan.map((t) => t.memberId));
-    const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+    // FIX v1.4.2: sebelumnya ini memanggil isMenunggak(activeBulan, activeTahun,
+    // activeBulan, activeTahun) — membandingkan bulan yang SEDANG DILIHAT
+    // terhadap DIRINYA SENDIRI. Akibatnya isMenunggak() selalu jatuh ke cabang
+    // "bulan aktif" (baris tagihanBulan === bulanAktif di helpers.ts), yang
+    // hanya mengecek tanggal-hari-ini-sungguhan terhadap batas bulan itu.
+    // Kalau activeBulan adalah bulan LAMPAU (mis. melihat Juni saat sekarang
+    // sudah Agustus), tanggal hari ini (2, di awal Agustus) tidak pernah ≥
+    // batas Juni (29) — sehingga hasilnya SELALU false, virtual entries tidak
+    // pernah dibuat, dan member yang belum di-entry sama sekali untuk bulan
+    // itu hilang total dari perhitungan (bukan cuma salah kategori).
+    // Perbaikan: bandingkan bulan yang dilihat (activeBulan/activeTahun)
+    // terhadap bulan AKTUAL SEKARANG (getBulanTahunAktif()) — persis makna
+    // asli isMenunggak: "apakah tagihan bulan X sudah lewat batas, dilihat
+    // dari sudut pandang hari ini". Bulan lampau otomatis selalu true (lihat
+    // isMenunggak: tagihanTahun < tahunAktif atau tagihanBulan < bulanAktif).
+    const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, bulanSekarang, tahunSekarang);
 
     // Virtual entries hanya dibuat jika bulan aktif sudah lewat batas aman
     // (menunggak) — lihat getBatasMenunggakTanggal di helpers.ts untuk batas
@@ -74,7 +94,7 @@ export default function TagihanView() {
       return a.memberNama.localeCompare(b.memberNama, "id");
     });
     return combined;
-  }, [tagihan, members, activeBulan, activeTahun, settings]);
+  }, [tagihan, members, activeBulan, activeTahun, settings, bulanSekarang, tahunSekarang]);
 
   const filtered = allTagihan.filter((t) => {
     if (filter !== "semua" && t.status !== filter) return false;
@@ -95,20 +115,24 @@ export default function TagihanView() {
     (m) => m.status === "aktif" && isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
   );
   const jumlahLunas = allTagihan.filter((t) => t.status === "lunas").length;
-  // Ditagih vs Menunggak DITENTUKAN OLEH TANGGAL (isMenunggak), bukan oleh
-  // apakah dokumennya virtual atau sudah pernah dientry. Sebelumnya sebuah
-  // tagihan yang sudah dientry (statusnya "belum", punya dokumen Firestore)
-  // selalu dihitung "Ditagih" meski hari ini sudah lewat batas aman bulan
-  // itu — sehingga jumlahMenunggak bisa tampil 0 padahal seharusnya ada
-  // entri yang sudah lewat batas. Sekarang keduanya (virtual maupun sudah
-  // dientry) dicek dengan aturan yang sama, konsisten dengan pola yang
-  // sudah dipakai RekapView (lihat `menunggak: t.status === "belum" &&
-  // isMenunggak(...)` di RekapView.tsx).
+  // FIX v1.4.2: activeBulan/activeTahun di sini adalah bulan yang SEDANG
+  // DILIHAT (bisa bulan lampau), bukan bulan sekarang sungguhan. Sebelumnya
+  // isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun) dipanggil dengan
+  // activeBulan sebagai parameter "bulan aktif" — untuk tagihan bulan Juli
+  // yang t.bulan-nya JUGA Juli (karena activeBulan=Juli), fungsi ini salah
+  // jatuh ke cabang "bulan sama" (isMenunggak di helpers.ts), yang cuma
+  // membandingkan TANGGAL-HARI-INI-SUNGGUHAN terhadap batas Juli. Kalau hari
+  // ini sudah Agustus, tanggal-hari-ini (mis. 2) hampir pasti < batas Juli
+  // (30) — sehingga tagihan Juli yang sudah dientry tapi belum bayar SELALU
+  // dianggap Ditagih, tidak pernah Menunggak, padahal Juli sudah lama lewat.
+  // Perbaikan: gunakan bulanSekarang/tahunSekarang (bulan sungguhan sekarang,
+  // dari getBulanTahunAktif() di scope komponen) sebagai parameter ketiga/
+  // keempat — persis makna asli isMenunggak, dan konsisten dengan RekapView.
   const jumlahDitagih = allTagihan.filter(
-    (t) => t.status === "belum" && !isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun)
+    (t) => t.status === "belum" && !isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang)
   ).length;
   const jumlahMenunggak = allTagihan.filter(
-    (t) => t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun)
+    (t) => t.status === "belum" && isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang)
   ).length;
 
   const handleShare = async (t: Tagihan) => {

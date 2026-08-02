@@ -9,7 +9,7 @@ import {
   updateTagihanStatus,
   saveActivityLog,
 } from "@/lib/db";
-import { formatRp, isMenunggak, getMemberStartPeriode } from "@/lib/helpers";
+import { formatRp, isMenunggak, getMemberStartPeriode, getBulanTahunAktif } from "@/lib/helpers";
 import { shareTagihan } from "@/lib/export";
 import { MONTHS } from "@/lib/constants";
 import { Tagihan } from "@/types";
@@ -23,6 +23,14 @@ export default function TunggakanView() {
 
   const isLocked = settings.globalLock;
   const isViewer = userRole?.role === "viewer";
+
+  // Bulan/tahun SUNGGUHAN sekarang (dari jam sistem) — beda dari activeBulan/
+  // activeTahun yang di menu ini berarti "batas atas periode yang dipilih
+  // pengguna" (lihat label "Tunggakan s/d [Bulan] [Tahun]" di render di bawah).
+  // Dipakai sebagai parameter bulanAktif/tahunAktif untuk isMenunggak(), yang
+  // butuh titik referensi "sekarang" yang sebenarnya, bukan bulan yang sedang
+  // ditampilkan.
+  const { bulan: bulanSekarangIni, tahun: tahunSekarangIni } = getBulanTahunAktif();
 
   const [tunggakan, setTunggakan] = useState<Tagihan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +67,10 @@ export default function TunggakanView() {
         // 1. Ambil semua tagihan yang sudah pernah di-entry (semua status, semua bulan)
         const entrySet = await getAllTagihanEntrySet();
 
-        // 2. Ambil tagihan belum bayar dari Firestore (bulan-bulan sebelum aktif)
+        // 2. Ambil tagihan belum bayar dari Firestore, dibatasi s/d cutoff
+        // yang dipilih pengguna (activeBulan/activeTahun) — lihat docstring
+        // getTagihanBelumBayarSebelumBulanIni di db.ts untuk detail perbedaan
+        // cutoff vs bulan-sekarang-sungguhan.
         const tagihanBelum = await getTagihanBelumBayarSebelumBulanIni(
           activeBulan, activeTahun, members
         );
@@ -68,7 +79,15 @@ export default function TunggakanView() {
         // 3. Buat virtual entries untuk member yang belum di-entry sama sekali
         const membersAktif = members.filter((m) => m.status === "aktif");
         const virtual: Tagihan[] = [];
-        const menunggakBulanAktif = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+        // FIX v1.4.2: activeBulan di sini adalah batas atas periode yang
+        // DIPILIH pengguna ("Tunggakan s/d [Bulan] [Tahun]"), bukan bulan
+        // sekarang sungguhan. isMenunggak() butuh bulan SEKARANG SUNGGUHAN
+        // sebagai parameter ketiga/keempat — sebelumnya dipanggil dengan
+        // activeBulan di situ juga, sehingga jika pengguna memilih cutoff ke
+        // bulan lampau (mis. Juni, padahal sekarang sudah Agustus), fungsi
+        // ini salah jatuh ke cabang "bulan sama" (bandingkan tanggal-hari-ini
+        // terhadap batas Juni) alih-alih cabang "bulan lampau, selalu true".
+        const menunggakBulanAktif = isMenunggak(activeBulan, activeTahun, bulanSekarangIni, tahunSekarangIni);
 
         // Tentukan range bulan yang perlu dicek: dari bulan terdaftar s/d bulan aktif
         membersAktif.forEach((m) => {
@@ -133,7 +152,7 @@ export default function TunggakanView() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [activeBulan, activeTahun, firebaseUser, members, membersLoaded, forceProceed, settings]
+    [activeBulan, activeTahun, firebaseUser, members, membersLoaded, forceProceed, settings, bulanSekarangIni, tahunSekarangIni]
   );
 
   useEffect(() => {
@@ -217,7 +236,7 @@ export default function TunggakanView() {
             Tunggakan s/d {MONTHS[activeBulan - 1]} {activeTahun}
           </div>
           <div className="text-xs mt-0.5" style={{ color: "var(--color-txt3)" }}>
-            {isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)
+            {isMenunggak(activeBulan, activeTahun, bulanSekarangIni, tahunSekarangIni)
               ? "Tagihan belum lunas melewati batas aman bulan ini"
               : "Tagihan bulan sebelumnya yang belum dilunasi"}
           </div>

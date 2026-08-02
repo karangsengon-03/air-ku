@@ -393,6 +393,52 @@ describe("isMenunggak", () => {
     expect(isMenunggak(2, 2024, 2, 2024)).toBe(true);
     vi.useRealTimers();
   });
+
+  // ── REGRESI v1.4.2: parameter ketiga/keempat (bulanAktif/tahunAktif) HARUS
+  // selalu bulan SEKARANG SUNGGUHAN (dari getBulanTahunAktif()), TIDAK BOLEH
+  // bulan yang sedang ditampilkan/dipilih di layar (activeBulan). Bug yang
+  // ditemukan di TagihanView/RekapView/TunggakanView v1.4.1: memanggil
+  // isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun) — bulan
+  // dibandingkan terhadap DIRINYA SENDIRI. Jika activeBulan adalah bulan
+  // LAMPAU (mis. melihat Juli sementara sekarang sudah Agustus), fungsi ini
+  // salah jatuh ke cabang "bulan sama" (baris tagihanBulan === bulanAktif),
+  // yang hanya membandingkan tanggal-hari-ini-sungguhan terhadap batas Juli
+  // — dan karena tanggal hari ini di awal Agustus (mis. tgl 2) hampir pasti
+  // BUKAN ≥ 30 (batas Juli), hasilnya SELALU false. Padahal Juli yang sudah
+  // lama lewat semestinya SELALU dianggap menunggak (cabang tagihanBulan <
+  // bulanAktif), terlepas dari tanggal berapa hari ini.
+  it("REGRESI: bulan lampau (Juli) yang dilihat dari bulan sekarang jauh setelahnya (Agustus) tetap SELALU menunggak, bukan false karena kebetulan tanggal-hari-ini kecil", () => {
+    vi.useFakeTimers();
+    // Hari ini: 2 Agustus 2026. Tagihan Juli 2026 belum bayar.
+    // Parameter ketiga/keempat WAJIB bulan sekarang (8, 2026) — BUKAN Juli
+    // (7, 2026) meski itu bulan yang sedang "dilihat" di suatu UI.
+    vi.setSystemTime(new Date("2026-08-02"));
+    expect(isMenunggak(7, 2026, 8, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("REGRESI: pola SALAH (bulan dibandingkan terhadap dirinya sendiri) memang menghasilkan false — mendokumentasikan mengapa activeBulan tidak boleh dipakai sebagai bulanAktif", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02"));
+    // Ini BUKAN cara yang benar memanggil isMenunggak — sengaja didokumentasikan
+    // sebagai bukti mengapa pola ini harus dihindari di semua pemanggil.
+    expect(isMenunggak(7, 2026, 7, 2026)).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("REGRESI: bulan lampau beberapa bulan sebelumnya (Juni, dilihat dari Agustus) tetap selalu menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-02"));
+    expect(isMenunggak(6, 2026, 8, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("REGRESI: lintas tahun — Desember 2025 dilihat dari Februari 2026 tetap selalu menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-05"));
+    expect(isMenunggak(12, 2025, 2, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
 });
 
 // ─── getBatasMenunggakTanggal & getJumlahHariDalamBulan ──────────────────────

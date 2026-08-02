@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Droplets, Download, Share2, Filter, Printer } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { getTagihanRekap, getTotalOperasional } from "@/lib/db";
-import { formatRp, isMenunggak, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
+import { formatRp, isMenunggak, isMemberTerdaftarSaatPeriode, getBulanTahunAktif } from "@/lib/helpers";
 import { downloadPdfRekap, buildWaKolektif, RekapRow } from "@/lib/export";
 import { MONTHS, YEARS } from "@/lib/constants";
 import RekapTable from "./RekapTable";
@@ -51,6 +51,15 @@ export default function RekapView() {
       // Build map tagihan by memberId
       const tagihanMap = new Map(tagihan.map((t) => [t.memberId, t]));
 
+      // Bulan/tahun SUNGGUHAN sekarang — titik referensi untuk isMenunggak(),
+      // independen dari activeBulan/activeTahun (bulan yang sedang DILIHAT di
+      // Rekap, yang bisa saja bulan lampau). FIX v1.4.2: sebelumnya kedua
+      // panggilan isMenunggak() di bawah salah memakai activeBulan sebagai
+      // parameter "bulan sekarang" juga, sehingga melihat rekap bulan lampau
+      // (mis. Juni saat sekarang Agustus) salah membandingkan tanggal hari
+      // ini terhadap batas Juni, bukan mengenali Juni sebagai bulan lampau.
+      const { bulan: bulanSekarang, tahun: tahunSekarang } = getBulanTahunAktif();
+
       // Join: semua member aktif + tagihan yang ada
       const membersAktif = members.filter((m) => m.status === "aktif");
 
@@ -78,11 +87,11 @@ export default function RekapView() {
               status: t.status,
               bulan: t.bulan,
               tahun: t.tahun,
-              menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun),
+              menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang),
             };
           } else {
             // Belum di-entry = belum bayar
-            const menunggak = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
+            const menunggak = isMenunggak(activeBulan, activeTahun, bulanSekarang, tahunSekarang);
             return {
               nama: m.nama,
               nomorSambungan: m.nomorSambungan,

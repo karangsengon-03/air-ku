@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Tagihan, Member, ActivityLog } from "@/types";
-import { buildNomorTagihan, isMemberTerdaftarSaatPeriode, isMenunggak } from "@/lib/helpers";
+import { buildNomorTagihan, isMemberTerdaftarSaatPeriode, isMenunggak, getBulanTahunAktif } from "@/lib/helpers";
 import { MAX_LOG_ENTRIES } from "@/lib/constants";
 
 // ─── Members ─────────────────────────────────────────────────────────────────
@@ -229,21 +229,32 @@ export async function getLatestHargaHistoryId(): Promise<string | null> {
 // ─── Tagihan Tunggakan ────────────────────────────────────────────────────────
 
 /**
- * Ambil semua tagihan belum lunas yang dianggap "tunggakan".
+ * Ambil semua tagihan belum lunas yang dianggap "tunggakan", dibatasi sampai
+ * dengan bulan/tahun cutoff yang dipilih pengguna (mis. "Tunggakan s/d Juni
+ * 2026" — tagihan bulan Juli/Agustus dst tidak ikut tampil meski sudah
+ * menunggak, karena di luar cutoff yang dipilih).
  *
  * Logika:
- * 1. Tagihan dari bulan-bulan SEBELUM bulan aktif yang masih belum lunas → selalu tunggakan.
- * 2. Tagihan bulan AKTIF yang belum lunas → tunggakan jika sudah lewat batas
+ * 1. Tagihan di luar cutoff (t.bulan/t.tahun > cutoffBulan/cutoffTahun) → selalu diabaikan.
+ * 2. Tagihan dari bulan-bulan SEBELUM bulan sekarang (sungguhan) yang masih belum lunas → selalu tunggakan.
+ * 3. Tagihan bulan SEKARANG (sungguhan) yang belum lunas → tunggakan jika sudah lewat batas
  *    aman bulan itu (lihat isMenunggak/getBatasMenunggakTanggal di helpers.ts —
  *    batasnya berbeda tiap bulan tergantung jumlah harinya, bukan tanggal tetap).
- * 3. Filter createdAt member: pelanggan hanya dihitung tunggakan mulai dari bulan
+ * 4. Filter createdAt member: pelanggan hanya dihitung tunggakan mulai dari bulan
  *    dia terdaftar. Tagihan sebelum bulan terdaftar → diabaikan.
+ *
+ * PENTING: cutoffBulan/cutoffTahun HANYA membatasi rentang data yang
+ * ditampilkan (dari pilihan date-picker pengguna) — BUKAN dipakai sebagai
+ * referensi "bulan sekarang" untuk isMenunggak(). Bulan sekarang sungguhan
+ * dihitung sendiri di dalam (getBulanTahunAktif()), supaya memilih cutoff ke
+ * bulan lampau tetap benar menganggap bulan itu sebagai tunggakan (bukan
+ * salah dibandingkan terhadap tanggal-hari-ini seolah cutoff = bulan aktif).
  *
  * Members di-pass dari luar (sudah ada di store) untuk hindari query ganda.
  */
 export async function getTagihanBelumBayarSebelumBulanIni(
-  bulan: number,
-  tahun: number,
+  cutoffBulan: number,
+  cutoffTahun: number,
   members?: Member[]
 ): Promise<Tagihan[]> {
   const q = query(
@@ -256,6 +267,10 @@ export async function getTagihanBelumBayarSebelumBulanIni(
     ...(d.data() as Omit<Tagihan, "id">),
   }));
 
+  // Bulan/tahun SUNGGUHAN sekarang — titik referensi untuk isMenunggak(),
+  // independen dari cutoff yang dipilih pengguna.
+  const { bulan: bulanSekarang, tahun: tahunSekarang } = getBulanTahunAktif();
+
   // Map memberId → Member, untuk cek kapan member terdaftar (createdAt).
   // Parsing createdAt dilakukan di satu tempat (isMemberTerdaftarSaatPeriode di
   // helpers.ts) supaya konsisten dengan Tagihan/Rekap/Beranda/Tunggakan.
@@ -267,11 +282,17 @@ export async function getTagihanBelumBayarSebelumBulanIni(
   }
 
   return all.filter((t) => {
-    // Tunggakan jika tagihan ini (t.bulan/t.tahun) sudah melewati batas aman —
-    // baik karena berasal dari bulan lampau (selalu true di isMenunggak) atau
-    // karena bulan aktif sudah lewat batas hari-nya. Konsisten dengan cara
-    // isMenunggak(t.bulan, t.tahun, bulan, tahun) dipanggil di RekapView.
-    if (!isMenunggak(t.bulan, t.tahun, bulan, tahun)) return false;
+    // 1. Batasi ke rentang cutoff yang dipilih pengguna — tagihan setelah
+    // cutoff tidak ikut tampil sama sekali, apa pun status menunggaknya.
+    const diLuarCutoff =
+      t.tahun > cutoffTahun || (t.tahun === cutoffTahun && t.bulan > cutoffBulan);
+    if (diLuarCutoff) return false;
+
+    // 2/3. Tunggakan jika tagihan ini (t.bulan/t.tahun) sudah melewati batas
+    // aman, dilihat dari bulan SEKARANG SUNGGUHAN — baik karena berasal dari
+    // bulan lampau (selalu true di isMenunggak) atau karena bulan sekarang
+    // sudah lewat batas hari-nya.
+    if (!isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang)) return false;
 
     // Pelanggan hanya wajib bayar mulai bulan dia terdaftar.
     // Jika member tidak ditemukan di memberMap (data lama tanpa createdAt,
