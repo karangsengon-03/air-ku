@@ -37,7 +37,7 @@ export default function TunggakanSummary({
         className="card flex-1"
         style={{ borderLeft: "3px solid var(--color-txt3)", padding: "14px 10px" }}
       >
-        <div className="section-label mb-1">Tagihan</div>
+        <div className="section-label mb-1">Akumulasi Tunggak</div>
         <div className="mono font-bold" style={{ color: "var(--color-txt2)", fontSize: 13 }}>
           {totalBulan} bulan
         </div>
