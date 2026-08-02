@@ -11,7 +11,8 @@ import { handleFirebaseError } from "@/lib/firebase-errors";
 import { memberSchema, MemberFormValues } from "@/schemas";
 import { toast } from "@/lib/toast";
 import ModalPortal from "@/components/ui/ModalPortal";
-import { generateNomorList } from "@/lib/helpers";
+import { generateNomorList, toDateInputValue } from "@/lib/helpers";
+import { Timestamp, serverTimestamp } from "firebase/firestore";
 
 interface MemberFormProps {
   editTarget: Member | null;
@@ -74,10 +75,12 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           dusun: editTarget.dusun,
           status: editTarget.status,
           meterAwalPertama: "",
+          tanggalTerdaftar: toDateInputValue(editTarget.tanggalTerdaftar ?? editTarget.createdAt),
+          tanggalNonaktif: toDateInputValue(editTarget.tanggalNonaktif),
         }
       : {
           nama: "", nomorSambungan: defaultNomor, alamat: "KARANG SENGON", rt: "", dusun: "",
-          status: "aktif", meterAwalPertama: "",
+          status: "aktif", meterAwalPertama: "", tanggalTerdaftar: "", tanggalNonaktif: "",
         },
   });
 
@@ -119,17 +122,42 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
       }
 
       if (editTarget) {
-        await updateMember(editTarget.id!, {
+        const statusLama = editTarget.status;
+        const statusBaru = data.status;
+        const berhentiSekarang = statusLama === "aktif" && statusBaru !== "aktif";
+        const aktifKembali = statusLama !== "aktif" && statusBaru === "aktif";
+
+        const updateData: Parameters<typeof updateMember>[1] = {
           nama: data.nama.trim(),
           nomorSambungan: data.nomorSambungan.trim(),
           alamat: data.alamat?.trim() ?? "",
           rt: data.rt ?? "",
           dusun: data.dusun,
           status: data.status,
-        });
+          // Koreksi manual tanggal terdaftar — hanya dikirim jika diisi, agar
+          // tidak menimpa nilai yang sudah ada dengan string kosong.
+          ...(data.tanggalTerdaftar ? { tanggalTerdaftar: Timestamp.fromDate(new Date(data.tanggalTerdaftar)) } : {}),
+        };
+
+        if (berhentiSekarang) {
+          // Baru berhenti — catat tanggal nonaktif (manual jika diisi, else hari ini)
+          updateData.tanggalNonaktif = Timestamp.fromDate(
+            data.tanggalNonaktif ? new Date(data.tanggalNonaktif) : new Date()
+          );
+        } else if (aktifKembali) {
+          // Reaktivasi — bersihkan tanggal nonaktif, dan tanggalTerdaftar mengikuti
+          // tanggal reaktivasi ini (kecuali admin sudah isi manual di atas).
+          updateData.tanggalNonaktif = null;
+          if (!data.tanggalTerdaftar) {
+            updateData.tanggalTerdaftar = serverTimestamp();
+          }
+        }
+
+        await updateMember(editTarget.id!, updateData);
         await saveActivityLog(
           "edit_member",
-          `Edit pelanggan: ${data.nama.trim()} (${data.nomorSambungan})`,
+          `Edit pelanggan: ${data.nama.trim()} (${data.nomorSambungan})` +
+            (berhentiSekarang ? ` — dinonaktifkan` : aktifKembali ? ` — diaktifkan kembali` : ""),
           // SAFE: AppShell memastikan firebaseUser tidak null sebelum render komponen ini
           firebaseUser!.email!, userRole!.role
         );
@@ -146,6 +174,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           meterAwalPertama: meterVal,
           // SAFE: AppShell memastikan firebaseUser tidak null sebelum render komponen ini
           createdBy: firebaseUser!.email!,
+          tanggalTerdaftar: data.tanggalTerdaftar ? new Date(data.tanggalTerdaftar) : undefined,
         });
         await saveActivityLog(
           "tambah_member",
@@ -259,6 +288,20 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
               {...register("alamat")} />
           </div>
 
+          {/* Tanggal Terdaftar — opsional, default waktu submit jika kosong */}
+          <div>
+            <label htmlFor="member-tanggal-terdaftar" className="section-label">
+              Tanggal Terdaftar {editTarget && <span style={{ fontWeight: 400, color: "var(--color-txt3)" }}>(kosongkan jika tidak ingin mengubah)</span>}
+            </label>
+            <input id="member-tanggal-terdaftar" type="date" className="input-field mono"
+              {...register("tanggalTerdaftar")} />
+            <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4 }}>
+              {editTarget
+                ? "Menentukan sejak bulan apa pelanggan ini wajib ditagih. Ubah hanya jika data awal salah input."
+                : "Kosongkan untuk memakai tanggal hari ini. Isi manual jika pelanggan sudah lebih dulu berlangganan sebelum didata di aplikasi."}
+            </div>
+          </div>
+
           {/* Meter Awal (hanya saat tambah) */}
           {!editTarget && (
             <div>
@@ -292,6 +335,23 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
                   </button>
                 ))}
               </div>
+              {watchedStatus === "aktif" && editTarget.status !== "aktif" && (
+                <div style={{ fontSize: 13, color: "var(--color-lunas)", marginTop: 8 }}>
+                  Akan diaktifkan kembali sejak tanggal hari ini (atau tanggal terdaftar di atas jika diisi). Riwayat tunggakan selama nonaktif tidak akan dihitung.
+                </div>
+              )}
+              {watchedStatus !== "aktif" && (
+                <div style={{ marginTop: 12 }}>
+                  <label htmlFor="member-tanggal-nonaktif" className="section-label">
+                    Tanggal {STATUS_LABEL[watchedStatus]}
+                  </label>
+                  <input id="member-tanggal-nonaktif" type="date" className="input-field mono"
+                    {...register("tanggalNonaktif")} />
+                  <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4 }}>
+                    Kosongkan untuk memakai tanggal hari ini. Pelanggan tidak akan ditagih lagi mulai bulan setelah tanggal ini. Status ini tidak permanen — bisa diaktifkan kembali kapan saja.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

@@ -1,4 +1,4 @@
-import { AppSettings, BlokTarif, BlokSnapshot, Member } from "@/types";
+import { AppSettings, BlokTarif, BlokSnapshot, Member, FirestoreTs } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
 // ─── Kalkulasi Tagihan ───────────────────────────────────────────────────────
@@ -291,52 +291,102 @@ export function isMenunggak(
 // ─── Periode Terdaftar Member (Sumber Kebenaran Tunggal) ─────────────────────
 
 /**
- * Ambil bulan & tahun member didaftarkan, dari field createdAt (Firestore Timestamp,
- * object {seconds}, atau Date). Return null jika createdAt tidak ada / tidak valid
- * (data lama dari sebelum field ini ada) — konsumen fungsi ini harus menganggap
- * null berarti "tidak ada batas, loloskan" agar konsisten dengan perilaku lama.
- *
- * INI SATU-SATUNYA TEMPAT parsing createdAt member dilakukan. Jangan duplikasi
- * logic ini di komponen lain — panggil fungsi ini atau isMemberTerdaftarSaatPeriode.
+ * Konversi satu field FirestoreTs jadi Date murni, atau null jika kosong/tidak
+ * valid (mis. FieldValue yang belum ter-resolve server). Dipakai sebagai basis
+ * untuk parseBulanTahun (logika bisnis) dan toDateInputValue (form <input type="date">).
  */
-export function getMemberStartPeriode(
-  member: Pick<Member, "createdAt">
-): { bulan: number; tahun: number } | null {
-  const { createdAt } = member;
-  if (!createdAt) return null;
-
-  let date: Date | null = null;
-  if (createdAt instanceof Timestamp) {
-    date = createdAt.toDate();
-  } else if (createdAt instanceof Date) {
-    date = createdAt;
-  } else if (typeof createdAt === "object" && "seconds" in createdAt) {
-    date = new Date((createdAt as { seconds: number }).seconds * 1000);
+function firestoreTsToDate(value: FirestoreTs): Date | null {
+  if (!value) return null;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  if (typeof value === "object" && "seconds" in value) {
+    return new Date((value as { seconds: number }).seconds * 1000);
   }
-  if (!date) return null;
+  return null; // FieldValue (serverTimestamp() yang belum resolve) atau bentuk lain
+}
 
+/**
+ * Format FirestoreTs jadi string "YYYY-MM-DD" untuk default value <input type="date">.
+ * Return string kosong jika tidak ada/tidak valid — biarkan input kosong, bukan
+ * menampilkan tanggal keliru.
+ */
+export function toDateInputValue(value: FirestoreTs): string {
+  const date = firestoreTsToDate(value);
+  if (!date) return "";
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * Parse satu field FirestoreTs jadi {bulan, tahun}. Helper internal — jangan
+ * dipanggil langsung dari komponen, pakai getMemberStartPeriode/getMemberEndPeriode.
+ */
+function parseBulanTahun(value: FirestoreTs): { bulan: number; tahun: number } | null {
+  const date = firestoreTsToDate(value);
+  if (!date) return null;
   return { bulan: date.getMonth() + 1, tahun: date.getFullYear() };
 }
 
 /**
- * Cek apakah member sudah terdaftar pada bulan/tahun tertentu — dipakai untuk
- * memastikan pelanggan baru tidak dianggap menunggak / belum-dientry untuk
- * bulan-bulan SEBELUM dia terdaftar, konsisten di semua menu (Tagihan, Rekap,
+ * Ambil bulan & tahun mulai periode aktif member SAAT INI. Prioritas:
+ * 1. tanggalTerdaftar (field baru, bisa diisi/diedit manual oleh admin)
+ * 2. createdAt (fallback untuk data lama yang belum punya tanggalTerdaftar)
+ * Return null jika keduanya tidak ada/tidak valid — konsumen fungsi ini harus
+ * menganggap null berarti "tidak ada batas, loloskan".
+ *
+ * INI SATU-SATUNYA TEMPAT parsing tanggal mulai member dilakukan. Jangan
+ * duplikasi logic ini di komponen lain — panggil fungsi ini atau
+ * isMemberTerdaftarSaatPeriode.
+ */
+export function getMemberStartPeriode(
+  member: Pick<Member, "tanggalTerdaftar" | "createdAt">
+): { bulan: number; tahun: number } | null {
+  return parseBulanTahun(member.tanggalTerdaftar) ?? parseBulanTahun(member.createdAt);
+}
+
+/**
+ * Ambil bulan & tahun member berhenti (tanggalNonaktif), jika ada. Return null
+ * jika member masih aktif atau tidak punya tanggal nonaktif tercatat (data
+ * lama) — konsumen harus menganggap null berarti "tidak ada batas atas".
+ */
+export function getMemberEndPeriode(
+  member: Pick<Member, "tanggalNonaktif">
+): { bulan: number; tahun: number } | null {
+  return parseBulanTahun(member.tanggalNonaktif);
+}
+
+/**
+ * Cek apakah member sudah terdaftar DAN belum berhenti pada bulan/tahun
+ * tertentu — dipakai untuk memastikan pelanggan baru tidak dianggap
+ * menunggak / belum-dientry untuk bulan-bulan SEBELUM dia terdaftar, dan
+ * pelanggan yang sudah berhenti tidak dianggap menunggak untuk bulan-bulan
+ * SETELAH dia nonaktif. Konsisten di semua menu (Entry, Tagihan, Rekap,
  * Beranda, Tunggakan).
  *
- * Jika member tidak punya createdAt (data lama), selalu return true (loloskan) —
- * tidak ada cukup informasi untuk membatasi, jadi perilaku default aman adalah
- * memperlakukannya seperti member yang sudah lama terdaftar.
+ * Jika member tidak punya tanggalTerdaftar/createdAt (data lama), selalu
+ * return true untuk syarat batas bawah — tidak ada cukup informasi untuk
+ * membatasi, jadi perilaku default aman adalah memperlakukannya seperti
+ * member yang sudah lama terdaftar.
  */
 export function isMemberTerdaftarSaatPeriode(
-  member: Pick<Member, "createdAt">,
+  member: Pick<Member, "tanggalTerdaftar" | "createdAt" | "tanggalNonaktif">,
   bulan: number,
   tahun: number
 ): boolean {
   const start = getMemberStartPeriode(member);
-  if (!start) return true; // data lama tanpa createdAt — loloskan
-  if (tahun < start.tahun) return false;
-  if (tahun === start.tahun && bulan < start.bulan) return false;
+  if (start) {
+    if (tahun < start.tahun) return false;
+    if (tahun === start.tahun && bulan < start.bulan) return false;
+  }
+
+  const end = getMemberEndPeriode(member);
+  if (end) {
+    if (tahun > end.tahun) return false;
+    if (tahun === end.tahun && bulan > end.bulan) return false;
+  }
+
   return true;
 }
 

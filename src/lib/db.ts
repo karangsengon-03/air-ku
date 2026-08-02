@@ -399,18 +399,27 @@ export async function deleteOperasional(id: string): Promise<void> {
 // ─── Member CRUD ──────────────────────────────────────────────────────────────
 
 export async function saveMember(
-  data: Omit<Member, "id">
+  data: Omit<Member, "id" | "tanggalTerdaftar" | "tanggalPendaftaranPertama"> & { tanggalTerdaftar?: Date }
 ): Promise<string> {
+  // Jika admin mengisi tanggal terdaftar manual, pakai itu. Jika tidak,
+  // default ke waktu server saat ini (perilaku lama, sebelum fitur ini ada).
+  // tanggalPendaftaranPertama selalu ikut tanggalTerdaftar saat pembuatan
+  // pertama — field ini tidak akan berubah lagi meski direaktivasi nanti.
+  const { tanggalTerdaftar: tanggalManual, ...rest } = data;
+  const tanggalTerdaftarValue = tanggalManual ? Timestamp.fromDate(tanggalManual) : serverTimestamp();
+
   const ref = await addDoc(collection(db, "members"), {
-    ...data,
+    ...rest,
     createdAt: serverTimestamp(),
+    tanggalTerdaftar: tanggalTerdaftarValue,
+    tanggalPendaftaranPertama: tanggalTerdaftarValue,
   });
   return ref.id;
 }
 
 export async function updateMember(
   id: string,
-  data: Partial<Omit<Member, "id" | "createdAt" | "createdBy">>
+  data: Partial<Omit<Member, "id" | "createdAt" | "createdBy" | "tanggalPendaftaranPertama">>
 ): Promise<void> {
   // Update dokumen member
   await updateDoc(doc(db, "members", id), data);

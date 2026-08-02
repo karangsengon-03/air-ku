@@ -4,7 +4,7 @@ import { ChevronLeft, CheckCircle2, RefreshCw, Zap, Gauge, CreditCard, FileText,
 import { useAppStore } from "@/store/useAppStore";
 import { toast } from "@/lib/toast";
 import { getLastMeter, saveTagihan, saveActivityLog, getLatestHargaHistoryId, deleteTagihan, updateTagihanStatus } from "@/lib/db";
-import { hitungTagihan, formatRp } from "@/lib/helpers";
+import { hitungTagihan, formatRp, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
 import { MONTHS } from "@/lib/constants";
 import { Member, Tagihan } from "@/types";
 import MemberSelector from "./MemberSelector";
@@ -66,7 +66,14 @@ export default function EntryView() {
   const meterAkhirRef = useRef<HTMLInputElement>(null);
   const qpManualRef = useRef<HTMLInputElement>(null);
 
-  const membersAktif = members.filter((m) => m.status === "aktif");
+  // Hanya pelanggan yang sudah terdaftar pada bulan/tahun aktif yang boleh
+  // dientry — mencegah entry tercatat untuk bulan sebelum pelanggan terdaftar.
+  const membersAktif = members.filter(
+    (m) => m.status === "aktif" && isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
+  );
+  const membersBelumTerdaftar = members.filter(
+    (m) => m.status === "aktif" && !isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
+  ).length;
 
   const qpNominal = (() => {
     if (qpPreset !== null) return qpPreset * 1000;
@@ -85,6 +92,13 @@ export default function EntryView() {
   const bulanLabel = `${MONTHS[activeBulan - 1]} ${activeTahun}`;
 
   const handleSelectMember = useCallback(async (member: Member) => {
+    // Lapis pertahanan kedua — meski MemberSelector sudah difilter, cek ulang
+    // di sini supaya tidak ada jalur lain yang bisa memilih member yang belum
+    // terdaftar pada bulan aktif ini.
+    if (!isMemberTerdaftarSaatPeriode(member, activeBulan, activeTahun)) {
+      toast.error(`${member.nama} belum terdaftar pada ${bulanLabel}.`);
+      return;
+    }
     setSelectedMember(member);
     setMeterAwal(""); setMeterAkhir(""); setCatatan("");
     setMeterAwalAuto(false); setSudahAda(null); setSavedResult(null);
@@ -110,10 +124,16 @@ export default function EntryView() {
     } else {
       setTimeout(() => qpManualRef.current?.focus(), 100);
     }
-  }, [activeBulan, activeTahun, entryMode, tagihan, modePembayaran]);
+  }, [activeBulan, activeTahun, entryMode, tagihan, modePembayaran, bulanLabel]);
 
   const handleSimpan = useCallback(async () => {
     if (!selectedMember?.id) return;
+    // Lapis pertahanan terakhir sebelum data tersimpan permanen ke Firestore —
+    // pastikan pelanggan sudah terdaftar pada bulan aktif ini.
+    if (!isMemberTerdaftarSaatPeriode(selectedMember, activeBulan, activeTahun)) {
+      toast.error(`${selectedMember.nama} belum terdaftar pada ${bulanLabel}. Entry dibatalkan.`);
+      return;
+    }
     const isQp = entryMode === "quickpay";
     const totalFinal = isQp ? qpNominal : (kalkulasi?.total ?? 0);
     if (isQp && !qpValid) { toast.error("Pilih nominal atau ketik 0 untuk pelanggan baru"); return; }
@@ -268,14 +288,25 @@ export default function EntryView() {
 
       {/* STEP 1: Pilih Pelanggan */}
       {step === 1 && (
-        <MemberSelector
-          search={search}
-          onSearchChange={setSearch}
-          members={membersAktif}
-          tagihan={tagihan}
-          bulanLabel={bulanLabel}
-          onSelect={handleSelectMember}
-        />
+        <>
+          {membersBelumTerdaftar > 0 && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "8px 12px",
+              borderRadius: 8, background: "rgba(146,64,14,0.08)", fontSize: 13, color: "var(--color-tunggakan)",
+            }}>
+              <Info size={13} />
+              {membersBelumTerdaftar} pelanggan belum terdaftar pada {bulanLabel}, tidak ditampilkan di sini.
+            </div>
+          )}
+          <MemberSelector
+            search={search}
+            onSearchChange={setSearch}
+            members={membersAktif}
+            tagihan={tagihan}
+            bulanLabel={bulanLabel}
+            onSelect={handleSelectMember}
+          />
+        </>
       )}
 
       {/* STEP 2: Input */}

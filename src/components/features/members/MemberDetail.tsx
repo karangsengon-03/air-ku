@@ -1,7 +1,7 @@
 "use client";
 import { X } from "lucide-react";
 import { Member, Tagihan } from "@/types";
-import { formatRp } from "@/lib/helpers";
+import { formatRp, formatTanggal } from "@/lib/helpers";
 import { STATUS_LABEL, STATUS_COLOR, STATUS_BG } from "./MemberCard";
 import ModalPortal from "@/components/ui/ModalPortal";
 
@@ -53,14 +53,31 @@ export default function MemberDetail({ member: m, riwayat, loading, onClose }: M
           </button>
         </div>
 
-        <div style={{ fontSize: 13, color: "var(--color-txt3)", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: "var(--color-txt3)", marginBottom: 4 }}>
           Meter awal pertama:{" "}
           <span className="mono" style={{ color: "var(--color-txt)", fontWeight: 600 }}>
             {m.meterAwalPertama} m³
           </span>
         </div>
 
-        <div style={{ height: 1, background: "var(--color-border)", marginBottom: 14 }} />
+        <div style={{ fontSize: 13, color: "var(--color-txt3)", marginBottom: 4 }}>
+          {m.status === "aktif" ? "Terdaftar sejak" : `${STATUS_LABEL[m.status]} sejak`}:{" "}
+          <span style={{ color: "var(--color-txt)", fontWeight: 600 }}>
+            {m.status === "aktif" ? formatTanggal(m.tanggalTerdaftar ?? m.createdAt) : formatTanggal(m.tanggalNonaktif)}
+          </span>
+        </div>
+
+        {/* Tampilkan tanggal pendaftaran pertama hanya jika berbeda dari tanggalTerdaftar
+            saat ini — menandakan pelanggan ini pernah nonaktif lalu diaktifkan kembali */}
+        {m.tanggalPendaftaranPertama && m.tanggalTerdaftar &&
+          formatTanggal(m.tanggalPendaftaranPertama) !== formatTanggal(m.tanggalTerdaftar) && (
+          <div style={{ fontSize: 13, color: "var(--color-txt3)", marginBottom: 12 }}>
+            Pertama kali terdaftar: <span style={{ color: "var(--color-txt)", fontWeight: 600 }}>{formatTanggal(m.tanggalPendaftaranPertama)}</span>
+            {" "}<span style={{ fontStyle: "italic" }}>(pernah nonaktif, aktif kembali)</span>
+          </div>
+        )}
+
+        <div style={{ height: 1, background: "var(--color-border)", marginBottom: 14, marginTop: 12 }} />
         <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>Riwayat Tagihan</div>
 
         {loading ? (

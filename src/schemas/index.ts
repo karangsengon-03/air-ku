@@ -16,6 +16,12 @@ export const memberSchema = z.object({
   status: z.enum(["aktif", "nonaktif", "pindah"]).default("aktif"),
   // Hanya relevan saat tambah baru (mode add), diabaikan saat edit
   meterAwalPertama: z.string().default(""),
+  // Format YYYY-MM-DD dari <input type="date">. Kosong = pakai default
+  // (waktu submit untuk pelanggan baru, atau tidak diubah saat edit).
+  tanggalTerdaftar: z.string().default(""),
+  // Format YYYY-MM-DD, hanya relevan saat status nonaktif/pindah.
+  // Kosong saat status nonaktif/pindah = pakai tanggal hari ini.
+  tanggalNonaktif: z.string().default(""),
 });
 
 export type MemberFormValues = z.infer<typeof memberSchema>;

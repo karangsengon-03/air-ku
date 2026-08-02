@@ -7,7 +7,7 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 
 ## Versi Terkini
 
-**v1.3.3** — Juli 2026
+**v1.4.0** — Agustus 2026
 
 ---
 
@@ -15,7 +15,7 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 
 | Layer | Stack |
 |---|---|
-| Framework | Next.js 16.2.6 (Turbopack) |
+| Framework | Next.js 16.2.12 (Turbopack) |
 | UI | React 19, Tailwind CSS 4, Lucide React |
 | Database | Firebase Firestore (realtime) |
 | Auth | Firebase Authentication |
@@ -35,6 +35,10 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 - Status: Aktif / Non-Aktif / Pindah
 - Nomor sambungan auto-format dengan alokasi range dari Pengaturan (format: 001–999, atau 0001–9999 otomatis)
 - Dropdown nomor sambungan — nomor terpakai tidak bisa dipilih ganda
+- **Tanggal Terdaftar** — bisa diisi manual (default: waktu submit). Ini yang menentukan sejak bulan apa pelanggan wajib ditagih; pelanggan tidak akan pernah tampil menunggak/belum-dientry untuk bulan sebelum tanggal ini
+- **Tanggal Nonaktif/Pindah** — diisi otomatis (hari ini) atau manual saat status diubah dari Aktif. Pelanggan berhenti ditagih sejak bulan setelah tanggal ini
+- **Reaktivasi (non-permanen)** — status bisa dikembalikan ke Aktif kapan saja. Saat diaktifkan kembali, tanggal nonaktif dibersihkan dan tanggal terdaftar diperbarui ke tanggal reaktivasi, sehingga periode nonaktif tidak dihitung sebagai tunggakan
+- Riwayat pendaftaran pertama (`tanggalPendaftaranPertama`) tetap tersimpan terpisah dan tidak pernah berubah, murni sebagai jejak historis
 
 ### Sistem Tarif
 - Abonemen bulanan
@@ -159,6 +163,7 @@ Versi otomatis dibaca dari `package.json` → tampil di Header dan halaman Penga
 
 | Versi | Tanggal | Ringkasan |
 |---|---|---|
+| **1.4.0** | Agu 2026 | Fix "Pelanggan Aktif" & menu Entry menampilkan pelanggan sebelum tanggal terdaftar mereka (Dashboard, Entry); fitur baru: tanggal terdaftar manual (koreksi data historis), tanggal nonaktif/pindah, dan reaktivasi non-permanen (berhenti-aktif kembali tidak dihitung tunggakan saat nonaktif); update Next.js 16.2.6 → 16.2.12 (patch keamanan) |
 | **1.3.3** | Jul 2026 | Fix pelanggan baru tampil menunggak/belum-dientry untuk bulan sebelum terdaftar (Tagihan, Rekap, Beranda); sentralisasi logika periode terdaftar member; guard race condition saat data member belum selesai dimuat (Tunggakan, Rekap) |
 | **1.3.2** | Jun 2026 | Fix hint teks Tagihan, fix export backup tidak terdownload |
 | **1.3.1** | Jun 2026 | Fix email viewer, konsistensi BottomNav icon/teks |

@@ -43,6 +43,13 @@ export default function DashboardView() {
   const lunas = tagihan.filter((t) => t.status === "lunas");
   const ditagih = tagihan.filter((t) => t.status === "belum"); // sudah di-entry, belum bayar
   const membersAktif = members.filter((m) => m.status === "aktif");
+  // Pelanggan yang sudah terdaftar pada bulan/tahun yang sedang dibuka —
+  // dipakai untuk statistik "Pelanggan Aktif" dan hint entry, supaya bulan
+  // lampau (mis. April dengan 12 pelanggan) tidak menampilkan angka total
+  // sistem saat ini (mis. 33) yang belum tentu relevan untuk bulan itu.
+  const membersAktifBulanIni = membersAktif.filter((m) =>
+    isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
+  );
   const memberIdsDiinput = new Set(tagihan.map((t) => t.memberId));
   // "Belum dientry" hanya berlaku untuk member yang sudah terdaftar pada bulan
   // aktif ini — pelanggan yang baru daftar bulan depan tidak dihitung di sini.
@@ -131,9 +138,10 @@ export default function DashboardView() {
         <div className="card" style={{ padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "var(--color-txt3)", textTransform: "uppercase", letterSpacing: "0.04em" }}>Pelanggan Aktif</div>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-txt)", fontFamily: "JetBrains Mono, monospace" }}>{membersAktif.length} orang</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: "var(--color-txt)", fontFamily: "JetBrains Mono, monospace" }}>{membersAktifBulanIni.length} orang</div>
             <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 1 }}>
               {tagihan.length > 0 ? `${tagihan.length} sudah diinput bulan ini` : "Belum ada entry bulan ini"}
+              {membersAktif.length !== membersAktifBulanIni.length && ` · ${membersAktif.length} total saat ini`}
             </div>
           </div>
           <TrendingUp size={28} style={{ color: "var(--color-txt3)", opacity: 0.5 }} />
@@ -149,7 +157,7 @@ export default function DashboardView() {
       )}
 
       {/* Hint entry jika ada member tapi belum ada tagihan bulan ini */}
-      {tagihan.length === 0 && membersAktif.length > 0 && isCurrentMonth && (
+      {tagihan.length === 0 && membersAktifBulanIni.length > 0 && isCurrentMonth && (
         <div style={{ textAlign: "center", color: "var(--color-txt3)" }}>
           <p style={{ fontSize: 13, margin: 0 }}>Belum ada iuran tercatat untuk {bulanLabel}</p>
         </div>

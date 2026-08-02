@@ -16,7 +16,9 @@ import {
   getBulanTahunAktif,
   isMenunggak,
   getMemberStartPeriode,
+  getMemberEndPeriode,
   isMemberTerdaftarSaatPeriode,
+  toDateInputValue,
 } from "../helpers";
 
 // ─── Mock firebase/firestore ─────────────────────────────────────────────────
@@ -407,5 +409,103 @@ describe("isMemberTerdaftarSaatPeriode", () => {
   it("member tanpa createdAt (data lama) selalu dianggap sudah terdaftar", () => {
     expect(isMemberTerdaftarSaatPeriode({ createdAt: null }, 1, 2020)).toBe(true);
     expect(isMemberTerdaftarSaatPeriode({ createdAt: undefined }, 1, 2020)).toBe(true);
+  });
+});
+
+// ─── getMemberStartPeriode — prioritas tanggalTerdaftar vs createdAt ─────────
+describe("getMemberStartPeriode — prioritas field", () => {
+  it("tanggalTerdaftar dipakai jika ada, mengabaikan createdAt", () => {
+    const tanggalTerdaftar = makeTimestampLike(new Date(2026, 6, 1)); // Juli 2026 (koreksi manual)
+    const createdAt = makeTimestampLike(new Date(2026, 2, 1)); // Maret 2026 (waktu submit form asli)
+    const result = getMemberStartPeriode({ tanggalTerdaftar, createdAt });
+    expect(result).toEqual({ bulan: 7, tahun: 2026 });
+  });
+
+  it("fallback ke createdAt jika tanggalTerdaftar kosong (data lama sebelum fitur ini ada)", () => {
+    const createdAt = makeTimestampLike(new Date(2026, 2, 1)); // Maret 2026
+    const result = getMemberStartPeriode({ tanggalTerdaftar: undefined, createdAt });
+    expect(result).toEqual({ bulan: 3, tahun: 2026 });
+  });
+
+  it("null jika keduanya kosong", () => {
+    expect(getMemberStartPeriode({ tanggalTerdaftar: null, createdAt: null })).toBeNull();
+  });
+});
+
+// ─── getMemberEndPeriode ──────────────────────────────────────────────────────
+describe("getMemberEndPeriode", () => {
+  it("null jika tanggalNonaktif tidak ada (member masih aktif)", () => {
+    expect(getMemberEndPeriode({ tanggalNonaktif: undefined })).toBeNull();
+    expect(getMemberEndPeriode({ tanggalNonaktif: null })).toBeNull();
+  });
+
+  it("membaca tanggalNonaktif dengan benar jika ada", () => {
+    const tanggalNonaktif = makeTimestampLike(new Date(2026, 5, 20)); // 20 Juni 2026
+    expect(getMemberEndPeriode({ tanggalNonaktif })).toEqual({ bulan: 6, tahun: 2026 });
+  });
+});
+
+// ─── isMemberTerdaftarSaatPeriode — batas atas (tanggalNonaktif) + reaktivasi ─
+describe("isMemberTerdaftarSaatPeriode — batas atas dan reaktivasi", () => {
+  // Skenario nyata yang didiskusikan: daftar Januari, berhenti Juni, aktif
+  // lagi Agustus (tanggalTerdaftar diperbarui ke Agustus saat reaktivasi).
+  const tanggalPendaftaranPertama = makeTimestampLike(new Date(2026, 0, 10)); // Jan 2026
+
+  it("bulan setelah tanggalNonaktif dianggap TIDAK terdaftar (berhenti, belum reaktivasi)", () => {
+    const member = {
+      tanggalTerdaftar: tanggalPendaftaranPertama,
+      tanggalNonaktif: makeTimestampLike(new Date(2026, 5, 15)), // berhenti Juni 2026
+    };
+    expect(isMemberTerdaftarSaatPeriode(member, 7, 2026)).toBe(false); // Juli setelah berhenti
+    expect(isMemberTerdaftarSaatPeriode(member, 12, 2026)).toBe(false); // Desember setelah berhenti
+  });
+
+  it("bulan pada/sebelum tanggalNonaktif tetap dianggap terdaftar", () => {
+    const member = {
+      tanggalTerdaftar: tanggalPendaftaranPertama,
+      tanggalNonaktif: makeTimestampLike(new Date(2026, 5, 15)), // berhenti Juni 2026
+    };
+    expect(isMemberTerdaftarSaatPeriode(member, 6, 2026)).toBe(true); // bulan berhenti itu sendiri
+    expect(isMemberTerdaftarSaatPeriode(member, 3, 2026)).toBe(true); // jauh sebelum berhenti
+  });
+
+  it("setelah reaktivasi (tanggalTerdaftar diperbarui ke Agustus, tanggalNonaktif direset null), Juni-Juli tidak dihitung tunggakan tapi Agustus dst terdaftar", () => {
+    const memberSetelahReaktivasi = {
+      tanggalTerdaftar: makeTimestampLike(new Date(2026, 7, 1)), // reaktivasi Agustus 2026
+      tanggalNonaktif: null, // direset saat reaktivasi
+    };
+    // Juni & Juli (periode nonaktif) tidak dianggap terdaftar — tidak ditagih
+    expect(isMemberTerdaftarSaatPeriode(memberSetelahReaktivasi, 6, 2026)).toBe(false);
+    expect(isMemberTerdaftarSaatPeriode(memberSetelahReaktivasi, 7, 2026)).toBe(false);
+    // Agustus dst dianggap terdaftar kembali
+    expect(isMemberTerdaftarSaatPeriode(memberSetelahReaktivasi, 8, 2026)).toBe(true);
+    expect(isMemberTerdaftarSaatPeriode(memberSetelahReaktivasi, 9, 2026)).toBe(true);
+  });
+
+  it("member aktif tanpa tanggalNonaktif tidak punya batas atas", () => {
+    const member = { tanggalTerdaftar: tanggalPendaftaranPertama, tanggalNonaktif: null };
+    expect(isMemberTerdaftarSaatPeriode(member, 12, 2030)).toBe(true); // jauh di masa depan tetap true
+  });
+});
+
+// ─── toDateInputValue ─────────────────────────────────────────────────────────
+describe("toDateInputValue", () => {
+  it("string kosong jika value null/undefined", () => {
+    expect(toDateInputValue(null)).toBe("");
+    expect(toDateInputValue(undefined)).toBe("");
+  });
+
+  it("format YYYY-MM-DD dengan benar dari Timestamp", () => {
+    const ts = Timestamp.fromDate(new Date(2026, 6, 5)); // 5 Juli 2026
+    expect(toDateInputValue(ts)).toBe("2026-07-05");
+  });
+
+  it("padding angka satu digit dengan benar (bulan dan tanggal < 10)", () => {
+    const ts = makeTimestampLike(new Date(2026, 0, 3)); // 3 Januari 2026
+    expect(toDateInputValue(ts)).toBe("2026-01-03");
+  });
+
+  it("format benar dari instance Date langsung", () => {
+    expect(toDateInputValue(new Date(2026, 11, 25))).toBe("2026-12-25"); // 25 Des 2026
   });
 });

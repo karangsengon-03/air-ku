@@ -1,6 +1,7 @@
 "use client";
 import { FileText, Pencil, Trash2 } from "lucide-react";
 import { Member, MemberStatus } from "@/types";
+import { formatTanggal } from "@/lib/helpers";
 
 export const STATUS_LABEL: Record<MemberStatus, string> = {
   aktif: "Aktif", nonaktif: "Non-Aktif", pindah: "Pindah",
@@ -48,6 +49,11 @@ export default function MemberCard({ member: m, isAdmin, isViewer, onDetail, onE
           {m.alamat && (
             <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4, lineHeight: 1.4 }}>{m.alamat}</div>
           )}
+          <div style={{ fontSize: 12, color: "var(--color-txt3)", marginTop: 4 }}>
+            {m.status === "aktif"
+              ? `Terdaftar sejak ${formatTanggal(m.tanggalTerdaftar ?? m.createdAt)}`
+              : `${STATUS_LABEL[m.status]} sejak ${formatTanggal(m.tanggalNonaktif)}`}
+          </div>
         </div>
         <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
           <button className="btn-ghost" style={{ padding: 8, color: "var(--color-primary)" }} onClick={() => onDetail(m)} title="Riwayat">
