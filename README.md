@@ -60,11 +60,11 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 |---|---|---|
 | **Lunas** | Hijau | Sudah bayar |
 | **Ditagih** | Oranye | Sudah dientry, belum bayar |
-| **Menunggak** | Merah | Belum dientry sama sekali, lewat tgl 25 |
+| **Menunggak** | Merah | Belum bayar dan sudah lewat batas aman bulan ini (baik sudah dientry maupun belum) |
 
 ### Tunggakan
 - Cek otomatis setiap hari
-- Batas bayar: tanggal 25 tiap bulan
+- Batas bayar: (hari terakhir bulan − 1) — mis. tgl 30 untuk bulan 31 hari, tgl 27/28 untuk Februari non-kabisat/kabisat
 - Virtual entry untuk pelanggan yang belum dientry sama sekali
 - Filter createdAt — pelanggan baru tidak masuk tunggakan bulan sebelum terdaftar
 
@@ -163,6 +163,7 @@ Versi otomatis dibaca dari `package.json` → tampil di Header dan halaman Penga
 
 | Versi | Tanggal | Ringkasan |
 |---|---|---|
+| **1.4.1** | Agu 2026 | Fix batas tunggakan hardcode tgl 25 → dihitung dinamis per bulan (hari terakhir bulan − 1, termasuk Februari kabisat); fix klasifikasi Ditagih/Menunggak di menu Tagihan yang sebelumnya tidak ikut cek tanggal untuk tagihan yang sudah dientry; fix tanggal nonaktif/pindah tidak tersimpan saat status pelanggan tidak berubah (koreksi data tanpa ganti status); tambah label log aktivitas yang hilang (Entry Tagihan, Tandai Lunas, Lunas Tunggakan, Ubah Tarif, Ubah Alokasi Nomor, Logout) |
 | **1.4.0** | Agu 2026 | Fix "Pelanggan Aktif" & menu Entry menampilkan pelanggan sebelum tanggal terdaftar mereka (Dashboard, Entry); fitur baru: tanggal terdaftar manual (koreksi data historis), tanggal nonaktif/pindah, dan reaktivasi non-permanen (berhenti-aktif kembali tidak dihitung tunggakan saat nonaktif); update Next.js 16.2.6 → 16.2.12 (patch keamanan) |
 | **1.3.3** | Jul 2026 | Fix pelanggan baru tampil menunggak/belum-dientry untuk bulan sebelum terdaftar (Tagihan, Rekap, Beranda); sentralisasi logika periode terdaftar member; guard race condition saat data member belum selesai dimuat (Tunggakan, Rekap) |
 | **1.3.2** | Jun 2026 | Fix hint teks Tagihan, fix export backup tidak terdownload |

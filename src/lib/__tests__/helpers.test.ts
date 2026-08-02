@@ -15,6 +15,8 @@ import {
   buildNomorTagihan,
   getBulanTahunAktif,
   isMenunggak,
+  getBatasMenunggakTanggal,
+  getJumlahHariDalamBulan,
   getMemberStartPeriode,
   getMemberEndPeriode,
   isMemberTerdaftarSaatPeriode,
@@ -317,25 +319,129 @@ describe("isMenunggak", () => {
     expect(isMenunggak(8, 2026, 7, 2026)).toBe(false);
   });
 
-  it("bulan aktif, sebelum tanggal 25 → belum menunggak", () => {
+  // ── Batas menunggak (v1.4.1): (hari terakhir bulan − 1), bukan tanggal
+  // tetap 25. Juli 2026 punya 31 hari → batas menunggak = tgl 30.
+  it("bulan aktif (Juli, 31 hari), sebelum batas (tgl 29) → belum menunggak", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-20"));
+    vi.setSystemTime(new Date("2026-07-29"));
     expect(isMenunggak(7, 2026, 7, 2026)).toBe(false);
     vi.useRealTimers();
   });
 
-  it("bulan aktif, tepat tanggal 25 → sudah menunggak", () => {
+  it("bulan aktif (Juli, 31 hari), tepat batas (tgl 30) → sudah menunggak", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-25"));
+    vi.setSystemTime(new Date("2026-07-30"));
     expect(isMenunggak(7, 2026, 7, 2026)).toBe(true);
     vi.useRealTimers();
   });
 
-  it("bulan aktif, setelah tanggal 25 → menunggak", () => {
+  it("bulan aktif (Juli, 31 hari), setelah batas (tgl 31) → menunggak", () => {
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-07-28"));
+    vi.setSystemTime(new Date("2026-07-31"));
     expect(isMenunggak(7, 2026, 7, 2026)).toBe(true);
     vi.useRealTimers();
+  });
+
+  // ── Bulan 30 hari (Juni): batas menunggak = tgl 29.
+  it("bulan aktif (Juni, 30 hari), sebelum batas (tgl 28) → belum menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-28"));
+    expect(isMenunggak(6, 2026, 6, 2026)).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif (Juni, 30 hari), tepat batas (tgl 29) → sudah menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-29"));
+    expect(isMenunggak(6, 2026, 6, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  // ── Februari non-kabisat (2026, 28 hari): batas menunggak = tgl 27.
+  it("bulan aktif (Februari 2026, non-kabisat, 28 hari), sebelum batas (tgl 26) → belum menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-26"));
+    expect(isMenunggak(2, 2026, 2, 2026)).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif (Februari 2026, non-kabisat, 28 hari), tepat batas (tgl 27) → sudah menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-02-27"));
+    expect(isMenunggak(2, 2026, 2, 2026)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  // ── Februari kabisat (2024, 29 hari): batas menunggak = tgl 28.
+  it("bulan aktif (Februari 2024, kabisat, 29 hari), sebelum batas (tgl 27) → belum menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-02-27"));
+    expect(isMenunggak(2, 2024, 2, 2024)).toBe(false);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif (Februari 2024, kabisat, 29 hari), tepat batas (tgl 28) → sudah menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-02-28"));
+    expect(isMenunggak(2, 2024, 2, 2024)).toBe(true);
+    vi.useRealTimers();
+  });
+
+  it("bulan aktif (Februari 2024, kabisat), tgl 29 (hari terakhir) → tetap menunggak", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2024-02-29"));
+    expect(isMenunggak(2, 2024, 2, 2024)).toBe(true);
+    vi.useRealTimers();
+  });
+});
+
+// ─── getBatasMenunggakTanggal & getJumlahHariDalamBulan ──────────────────────
+describe("getJumlahHariDalamBulan", () => {
+  it("bulan 31 hari (Januari, Juli, Desember)", () => {
+    expect(getJumlahHariDalamBulan(1, 2026)).toBe(31);
+    expect(getJumlahHariDalamBulan(7, 2026)).toBe(31);
+    expect(getJumlahHariDalamBulan(12, 2026)).toBe(31);
+  });
+
+  it("bulan 30 hari (April, Juni, September, November)", () => {
+    expect(getJumlahHariDalamBulan(4, 2026)).toBe(30);
+    expect(getJumlahHariDalamBulan(6, 2026)).toBe(30);
+    expect(getJumlahHariDalamBulan(9, 2026)).toBe(30);
+    expect(getJumlahHariDalamBulan(11, 2026)).toBe(30);
+  });
+
+  it("Februari non-kabisat → 28 hari", () => {
+    expect(getJumlahHariDalamBulan(2, 2026)).toBe(28);
+    expect(getJumlahHariDalamBulan(2, 2027)).toBe(28);
+  });
+
+  it("Februari kabisat → 29 hari", () => {
+    expect(getJumlahHariDalamBulan(2, 2024)).toBe(29);
+    expect(getJumlahHariDalamBulan(2, 2028)).toBe(29);
+  });
+});
+
+describe("getBatasMenunggakTanggal", () => {
+  it("bulan 31 hari (Juli) → batas tgl 30", () => {
+    expect(getBatasMenunggakTanggal(7, 2026)).toBe(30);
+  });
+
+  it("bulan 30 hari (Juni) → batas tgl 29", () => {
+    expect(getBatasMenunggakTanggal(6, 2026)).toBe(29);
+  });
+
+  it("bulan 30 hari (April) → batas tgl 29", () => {
+    expect(getBatasMenunggakTanggal(4, 2026)).toBe(29);
+  });
+
+  it("Februari non-kabisat (2026, 2027) → batas tgl 27", () => {
+    expect(getBatasMenunggakTanggal(2, 2026)).toBe(27);
+    expect(getBatasMenunggakTanggal(2, 2027)).toBe(27);
+  });
+
+  it("Februari kabisat (2024, 2028) → batas tgl 28", () => {
+    expect(getBatasMenunggakTanggal(2, 2024)).toBe(28);
+    expect(getBatasMenunggakTanggal(2, 2028)).toBe(28);
   });
 });
 

@@ -22,6 +22,10 @@ function ActionIcon({ name, color }: { name: string; color: string }) {
 }
 
 // ── Action metadata
+// PENTING: setiap action string yang dikirim ke saveActivityLog() di manapun
+// dalam kode HARUS punya entri di sini. Jika tidak, getActionMeta() akan
+// fallback menampilkan nama action mentah (mis. "entry_tagihan") ke pengguna,
+// yang terlihat tidak rapi dibanding label lain seperti "Edit Pelanggan".
 export const ACTION_META: Record<string, { label: string; icon: string; color: string }> = {
   tambah_member: { label: "Tambah Pelanggan", icon: "UserPlus", color: "var(--color-lunas)" },
   edit_member: { label: "Edit Pelanggan", icon: "Pencil", color: "var(--color-primary)" },
@@ -38,6 +42,15 @@ export const ACTION_META: Record<string, { label: string; icon: string; color: s
   global_unlock: { label: "Global Unlock", icon: "Unlock", color: "var(--color-lunas)" },
   entry_bayar: { label: "Entry Bayar", icon: "ClipboardCheck", color: "var(--color-lunas)" },
   hapus_entry: { label: "Hapus Entry", icon: "Trash2", color: "var(--color-belum)" },
+  // ── Ditambahkan: action string ini sudah dipanggil di kode (EntryView,
+  // TagihanView, TunggakanView, SettingsSections) tapi sebelumnya belum
+  // terdaftar di sini, sehingga tampil mentah apa adanya di Log Aktivitas.
+  entry_tagihan: { label: "Entry Tagihan (Ditagih)", icon: "ClipboardList", color: "var(--color-tunggakan)" },
+  tandai_lunas: { label: "Tandai Lunas", icon: "CheckCircle2", color: "var(--color-lunas)" },
+  LUNAS_TUNGGAKAN: { label: "Lunas Tunggakan", icon: "CheckCircle2", color: "var(--color-lunas)" },
+  ubah_tarif: { label: "Ubah Tarif", icon: "Settings", color: "var(--color-primary)" },
+  ubah_alokasi_nomor: { label: "Ubah Alokasi Nomor", icon: "Settings", color: "var(--color-primary)" },
+  logout: { label: "Logout", icon: "Unlock", color: "var(--color-txt3)" },
 };
 
 export function getActionMeta(action: string) {

@@ -323,7 +323,7 @@ export interface RekapRow {
   pemakaian: number;
   total: number;
   status: "lunas" | "belum";
-  menunggak: boolean; // true jika belum bayar dan sudah lewat tgl 25
+  menunggak: boolean; // true jika belum bayar dan sudah lewat batas menunggak bulan itu (lihat isMenunggak di helpers.ts)
   bulan: number;
   tahun: number;
 }

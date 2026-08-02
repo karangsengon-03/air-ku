@@ -24,8 +24,10 @@ export default function TagihanView() {
     const tagihanIds = new Set(tagihan.map((t) => t.memberId));
     const menunggakBulanIni = isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun);
 
-    // Virtual entries hanya dibuat jika sudah lewat tgl 25 (menunggak)
-    // Jika belum lewat tgl 25, member yang belum dientry tidak perlu tampil di Tagihan
+    // Virtual entries hanya dibuat jika bulan aktif sudah lewat batas aman
+    // (menunggak) — lihat getBatasMenunggakTanggal di helpers.ts untuk batas
+    // per-bulan. Jika belum lewat batas, member yang belum dientry tidak
+    // perlu tampil di Tagihan.
     const virtual: Tagihan[] = menunggakBulanIni
       ? membersAktif
           .filter((m) => m.id && !tagihanIds.has(m.id))
@@ -93,8 +95,21 @@ export default function TagihanView() {
     (m) => m.status === "aktif" && isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun)
   );
   const jumlahLunas = allTagihan.filter((t) => t.status === "lunas").length;
-  const jumlahDitagih = allTagihan.filter((t) => t.status === "belum" && !(t as Tagihan & { _virtual?: boolean })._virtual && t.catatan !== "belum-dientry").length;
-  const jumlahMenunggak = allTagihan.filter((t) => t.status === "belum" && ((t as Tagihan & { _virtual?: boolean })._virtual || t.catatan === "belum-dientry")).length;
+  // Ditagih vs Menunggak DITENTUKAN OLEH TANGGAL (isMenunggak), bukan oleh
+  // apakah dokumennya virtual atau sudah pernah dientry. Sebelumnya sebuah
+  // tagihan yang sudah dientry (statusnya "belum", punya dokumen Firestore)
+  // selalu dihitung "Ditagih" meski hari ini sudah lewat batas aman bulan
+  // itu — sehingga jumlahMenunggak bisa tampil 0 padahal seharusnya ada
+  // entri yang sudah lewat batas. Sekarang keduanya (virtual maupun sudah
+  // dientry) dicek dengan aturan yang sama, konsisten dengan pola yang
+  // sudah dipakai RekapView (lihat `menunggak: t.status === "belum" &&
+  // isMenunggak(...)` di RekapView.tsx).
+  const jumlahDitagih = allTagihan.filter(
+    (t) => t.status === "belum" && !isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun)
+  ).length;
+  const jumlahMenunggak = allTagihan.filter(
+    (t) => t.status === "belum" && isMenunggak(t.bulan, t.tahun, activeBulan, activeTahun)
+  ).length;
 
   const handleShare = async (t: Tagihan) => {
     try { await shareTagihan(t, settings); }
@@ -199,7 +214,7 @@ export default function TagihanView() {
       {/* Hint */}
       <div style={{ padding: "8px 12px", borderRadius: 8, background: "rgba(3,105,161,0.07)", fontSize: 13, color: "var(--color-primary)", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
         <Info size={14} style={{ flexShrink: 0 }} />
-        <span>Catat pembayaran via menu <strong>Entry</strong>. Lewat tgl 25 tanpa entry otomatis jadi <strong>Menunggak</strong>.</span>
+        <span>Catat pembayaran via menu <strong>Entry</strong>. Lewat batas aman bulan ini tanpa entry otomatis jadi <strong>Menunggak</strong>.</span>
       </div>
 
       {/* List */}

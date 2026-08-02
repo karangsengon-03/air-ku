@@ -267,12 +267,47 @@ export const STATUS_TIER_BG: Record<StatusTier, string> = {
 
 
 /**
- * Cek apakah tagihan yang belum bayar sudah melewati batas tanggal 25.
- * Dipakai konsisten di semua menu: Tagihan, Rekap, Tunggakan, Dashboard.
+ * Ambil jumlah hari dalam satu bulan tertentu (28–31), termasuk penanganan
+ * tahun kabisat untuk Februari secara otomatis lewat trik `new Date(tahun,
+ * bulan, 0)` (hari ke-0 bulan berikutnya = hari terakhir bulan ini).
+ *
+ * bulan: 1–12 (bukan 0-indexed, mengikuti konvensi bulan di seluruh file ini)
+ */
+export function getJumlahHariDalamBulan(bulan: number, tahun: number): number {
+  return new Date(tahun, bulan, 0).getDate();
+}
+
+/**
+ * Ambil tanggal batas mulai Menunggak untuk suatu bulan/tahun.
+ *
+ * Aturan (dikonfirmasi oleh admin, v1.4.1): batas menunggak dimulai pada
+ * (hari terakhir bulan − 1), berlaku sama untuk semua bulan termasuk
+ * Februari kabisat/non-kabisat. Ini otomatis menghasilkan:
+ * - Bulan 31 hari (Jan, Mar, Mei, Jul, Ags, Okt, Des) → aman s/d tgl 29,
+ *   menunggak mulai tgl 30.
+ * - Bulan 30 hari (Apr, Jun, Sep, Nov) → aman s/d tgl 28, menunggak mulai
+ *   tgl 29.
+ * - Februari 28 hari → aman s/d tgl 26, menunggak mulai tgl 27.
+ * - Februari 29 hari (kabisat) → aman s/d tgl 27, menunggak mulai tgl 28.
+ *
+ * INI SATU-SATUNYA TEMPAT batas tanggal menunggak dihitung. Jangan hardcode
+ * angka tanggal (mis. `>= 25` atau `>= 28`) di tempat lain — panggil fungsi
+ * ini atau isMenunggak() di bawah.
+ */
+export function getBatasMenunggakTanggal(bulan: number, tahun: number): number {
+  return getJumlahHariDalamBulan(bulan, tahun) - 1;
+}
+
+/**
+ * Cek apakah tagihan yang belum bayar sudah melewati batas aman pembayaran
+ * bulan tersebut. Dipakai konsisten di semua menu: Tagihan, Rekap, Tunggakan,
+ * Dashboard, dan getTagihanBelumBayarSebelumBulanIni (db.ts).
  *
  * Logika:
  * - Bulan sebelum bulan aktif → selalu menunggak
- * - Bulan aktif → menunggak jika hari ini ≥ 25
+ * - Bulan aktif → menunggak jika tanggal hari ini ≥ batas menunggak bulan itu
+ *   (lihat getBatasMenunggakTanggal untuk rincian per-bulan)
+ * - Bulan setelah bulan aktif → belum menunggak (belum waktunya ditagih)
  */
 export function isMenunggak(
   tagihanBulan: number,
@@ -283,7 +318,8 @@ export function isMenunggak(
   if (tagihanTahun < tahunAktif) return true;
   if (tagihanTahun === tahunAktif && tagihanBulan < bulanAktif) return true;
   if (tagihanTahun === tahunAktif && tagihanBulan === bulanAktif) {
-    return new Date().getDate() >= 25;
+    const batas = getBatasMenunggakTanggal(tagihanBulan, tagihanTahun);
+    return new Date().getDate() >= batas;
   }
   return false;
 }

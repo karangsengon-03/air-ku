@@ -126,6 +126,18 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         const statusBaru = data.status;
         const berhentiSekarang = statusLama === "aktif" && statusBaru !== "aktif";
         const aktifKembali = statusLama !== "aktif" && statusBaru === "aktif";
+        // Status TIDAK berubah, tapi masih nonaktif/pindah — mis. admin cuma
+        // mau mengoreksi tanggal nonaktif yang salah input sebelumnya (bukan
+        // transisi status baru). Dibandingkan terhadap nilai yang sama-sama
+        // dipakai untuk mengisi form saat dibuka (lihat defaultValues di atas:
+        // toDateInputValue(editTarget.tanggalNonaktif)), supaya "tidak ada
+        // perubahan" terdeteksi dengan benar meski keduanya kosong.
+        const statusTetapNonaktif = !berhentiSekarang && !aktifKembali && statusBaru !== "aktif";
+        const nilaiNonaktifTersimpan = toDateInputValue(editTarget.tanggalNonaktif);
+        const koreksiTanggalNonaktif =
+          statusTetapNonaktif &&
+          data.tanggalNonaktif !== "" &&
+          data.tanggalNonaktif !== nilaiNonaktifTersimpan;
 
         const updateData: Parameters<typeof updateMember>[1] = {
           nama: data.nama.trim(),
@@ -151,13 +163,26 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           if (!data.tanggalTerdaftar) {
             updateData.tanggalTerdaftar = serverTimestamp();
           }
+        } else if (koreksiTanggalNonaktif) {
+          // Status tetap nonaktif/pindah, admin cuma mengoreksi tanggalnya —
+          // FIX v1.4.1: sebelumnya cabang ini tidak ada sama sekali, jadi
+          // koreksi tanggal nonaktif untuk pelanggan yang statusnya tidak
+          // berubah tidak pernah terkirim ke Firestore (updateData tidak
+          // pernah menyentuh field ini), meski toast sukses tetap muncul.
+          updateData.tanggalNonaktif = Timestamp.fromDate(new Date(data.tanggalNonaktif));
         }
 
         await updateMember(editTarget.id!, updateData);
         await saveActivityLog(
           "edit_member",
           `Edit pelanggan: ${data.nama.trim()} (${data.nomorSambungan})` +
-            (berhentiSekarang ? ` — dinonaktifkan` : aktifKembali ? ` — diaktifkan kembali` : ""),
+            (berhentiSekarang
+              ? ` — dinonaktifkan`
+              : aktifKembali
+                ? ` — diaktifkan kembali`
+                : koreksiTanggalNonaktif
+                  ? ` — koreksi tanggal nonaktif`
+                  : ""),
           // SAFE: AppShell memastikan firebaseUser tidak null sebelum render komponen ini
           firebaseUser!.email!, userRole!.role
         );
@@ -348,7 +373,14 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
                   <input id="member-tanggal-nonaktif" type="date" className="input-field mono"
                     {...register("tanggalNonaktif")} />
                   <div style={{ fontSize: 13, color: "var(--color-txt3)", marginTop: 4 }}>
-                    Kosongkan untuk memakai tanggal hari ini. Pelanggan tidak akan ditagih lagi mulai bulan setelah tanggal ini. Status ini tidak permanen — bisa diaktifkan kembali kapan saja.
+                    {editTarget.status === watchedStatus
+                      // Status TIDAK berubah — field ini pre-filled dari data
+                      // tersimpan (lihat defaultValues). Mengosongkannya berarti
+                      // "tidak ingin mengubah", bukan "pakai hari ini" — supaya
+                      // penghapusan tidak sengaja tidak menimpa tanggal yang
+                      // sudah benar dengan tanggal hari ini.
+                      ? "Kosongkan jika tidak ingin mengubah tanggal yang sudah tersimpan. Isi untuk mengoreksi jika data awal salah input."
+                      : "Kosongkan untuk memakai tanggal hari ini. Pelanggan tidak akan ditagih lagi mulai bulan setelah tanggal ini. Status ini tidak permanen — bisa diaktifkan kembali kapan saja."}
                   </div>
                 </div>
               )}

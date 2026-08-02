@@ -17,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Tagihan, Member, ActivityLog } from "@/types";
-import { buildNomorTagihan, isMemberTerdaftarSaatPeriode } from "@/lib/helpers";
+import { buildNomorTagihan, isMemberTerdaftarSaatPeriode, isMenunggak } from "@/lib/helpers";
 import { MAX_LOG_ENTRIES } from "@/lib/constants";
 
 // ─── Members ─────────────────────────────────────────────────────────────────
@@ -233,7 +233,9 @@ export async function getLatestHargaHistoryId(): Promise<string | null> {
  *
  * Logika:
  * 1. Tagihan dari bulan-bulan SEBELUM bulan aktif yang masih belum lunas → selalu tunggakan.
- * 2. Tagihan bulan AKTIF yang belum lunas → hanya tunggakan jika hari ini sudah lewat tanggal 25.
+ * 2. Tagihan bulan AKTIF yang belum lunas → tunggakan jika sudah lewat batas
+ *    aman bulan itu (lihat isMenunggak/getBatasMenunggakTanggal di helpers.ts —
+ *    batasnya berbeda tiap bulan tergantung jumlah harinya, bukan tanggal tetap).
  * 3. Filter createdAt member: pelanggan hanya dihitung tunggakan mulai dari bulan
  *    dia terdaftar. Tagihan sebelum bulan terdaftar → diabaikan.
  *
@@ -254,9 +256,6 @@ export async function getTagihanBelumBayarSebelumBulanIni(
     ...(d.data() as Omit<Tagihan, "id">),
   }));
 
-  const todayDate = new Date().getDate(); // 1–31
-  const sudahLewatTanggal25 = todayDate >= 25;
-
   // Map memberId → Member, untuk cek kapan member terdaftar (createdAt).
   // Parsing createdAt dilakukan di satu tempat (isMemberTerdaftarSaatPeriode di
   // helpers.ts) supaya konsisten dengan Tagihan/Rekap/Beranda/Tunggakan.
@@ -268,15 +267,11 @@ export async function getTagihanBelumBayarSebelumBulanIni(
   }
 
   return all.filter((t) => {
-    // Tagihan bulan-bulan sebelum bulan aktif → selalu tunggakan
-    const isSebelumBulanAktif =
-      t.tahun < tahun || (t.tahun === tahun && t.bulan < bulan);
-
-    // Tagihan bulan aktif → tunggakan hanya jika sudah lewat tanggal 25
-    const isBulanAktif = t.tahun === tahun && t.bulan === bulan;
-    const isAktifDanLewat = isBulanAktif && sudahLewatTanggal25;
-
-    if (!isSebelumBulanAktif && !isAktifDanLewat) return false;
+    // Tunggakan jika tagihan ini (t.bulan/t.tahun) sudah melewati batas aman —
+    // baik karena berasal dari bulan lampau (selalu true di isMenunggak) atau
+    // karena bulan aktif sudah lewat batas hari-nya. Konsisten dengan cara
+    // isMenunggak(t.bulan, t.tahun, bulan, tahun) dipanggil di RekapView.
+    if (!isMenunggak(t.bulan, t.tahun, bulan, tahun)) return false;
 
     // Pelanggan hanya wajib bayar mulai bulan dia terdaftar.
     // Jika member tidak ditemukan di memberMap (data lama tanpa createdAt,

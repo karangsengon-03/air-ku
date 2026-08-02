@@ -85,7 +85,8 @@ export default function TunggakanView() {
           let b = startBulan;
 
           while (y < activeTahun || (y === activeTahun && b <= activeBulan)) {
-            // Bulan aktif: hanya masuk tunggakan jika sudah lewat tgl 25
+            // Bulan aktif: hanya masuk tunggakan jika sudah lewat batas aman
+            // bulan itu (lihat getBatasMenunggakTanggal di helpers.ts)
             if (y === activeTahun && b === activeBulan && !menunggakBulanAktif) break;
 
             const key = `${m.id}-${y}-${b}`;
@@ -217,7 +218,7 @@ export default function TunggakanView() {
           </div>
           <div className="text-xs mt-0.5" style={{ color: "var(--color-txt3)" }}>
             {isMenunggak(activeBulan, activeTahun, activeBulan, activeTahun)
-              ? "Tagihan belum lunas melewati tanggal 25"
+              ? "Tagihan belum lunas melewati batas aman bulan ini"
               : "Tagihan bulan sebelumnya yang belum dilunasi"}
           </div>
         </div>
