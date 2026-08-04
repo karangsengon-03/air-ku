@@ -57,7 +57,10 @@ export const PAGE_ICONS: Record<string, string> = {
   accounts: "user-cog",
 };
 
-export const MAX_LOG_ENTRIES = 500;
-
 // QuickPay nominal presets (dalam ribuan rupiah)
 export const QUICKPAY_PRESETS = [25, 27, 28, 30, 35, 40, 50];
+
+// Export Rekap "Keseluruhan": dibatasi N tahun terakhir (disepakati admin,
+// v1.5.0) demi menjaga PDF tidak jadi ratusan halaman dan file Excel tetap
+// ringan dibuka, seiring data bertambah dari tahun ke tahun.
+export const EXPORT_KESELURUHAN_TAHUN_TERAKHIR = 3;

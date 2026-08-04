@@ -89,10 +89,27 @@ service cloud.firestore {
     // ─── /activityLog/{id} ────────────────────────────────────────────────
     // Admin only baca — viewer tidak bisa baca log internal
     // Viewer juga tidak perlu tulis log (tidak ada aksi yang dicatat)
+    // Log HANYA berfungsi sebagai catatan teknis jangka pendek ("siapa
+    // baru saja melakukan apa") — BUKAN arsip audit jangka panjang. Untuk
+    // sengketa pembayaran/tanggal bayar, sumber kebenarannya adalah data
+    // tagihan/riwayat pelanggan di koleksi lain (permanen, tidak kena
+    // aturan hapus ini sama sekali), bukan activityLog.
+    //
+    // delete HANYA diizinkan jika dokumen itu SENDIRI (resource.data.ts)
+    // sudah berusia lebih dari 30 hari — dicek di level rules (server),
+    // bukan dipercayakan ke kode aplikasi. Ini sengaja BUKAN "allow delete:
+    // if isAdmin()" — admin tetap TIDAK BISA menghapus log secara manual/
+    // sesuka hati lewat aplikasi, walau dia admin, selama log itu belum
+    // genap 30 hari. Kondisi ini murni berbasis usia dokumen, bukan siapa
+    // yang meminta, jadi klien nakal ataupun bug di kode aplikasi tidak
+    // bisa memaksa hapus log yang masih baru.
     match /activityLog/{id} {
       allow read: if isAdmin();
       allow create: if isStaff();
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if isAdmin()
+        && resource.data.keys().hasAll(['ts'])
+        && resource.data.ts < request.time - duration.value(30, 'd');
     }
 
     // ─── Blokir semua path lain ────────────────────────────────────────────

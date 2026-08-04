@@ -11,7 +11,7 @@ export type { Role, MemberStatus, TagihanStatus, ModeTunggakan, FirestoreTs, Fir
 export type { BlokTarif, AppSettings, HargaHistory, TipeBlok, ModeTarif, ModePembayaran } from './settings';
 export {      defaultSettings }                                            from './settings';
 export type { Member }                                            from './member';
-export type { BlokSnapshot, Tagihan }                            from './tagihan';
+export type { BlokSnapshot, Tagihan, RekapRow }                  from './tagihan';
 export type { Operasional }                                       from './operasional';
 export type { ActivityLog }                                       from './log';
 export type { UserRole }                                          from './auth';

@@ -14,10 +14,16 @@ export default function LogView() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Auto-hapus log > 30 hari (admin only, silent)
+  // Auto-hapus log > 30 hari (admin only, background). Kegagalan di-log ke
+  // console (bukan toast — ini proses latar belakang, tidak perlu mengganggu
+  // pengalaman admin), supaya kalau suatu saat gagal lagi (mis. rules
+  // berubah), ada jejak untuk didiagnosis lewat DevTools alih-alih ditelan
+  // diam-diam seperti sebelumnya.
   useEffect(() => {
     if (userRole?.role !== "admin") return;
-    pruneOldActivityLogs().catch(() => {});
+    pruneOldActivityLogs().catch((err) => {
+      console.error("Gagal auto-hapus log lama:", err);
+    });
   }, [userRole]);
 
   const [search, setSearch] = useState("");
@@ -25,7 +31,10 @@ export default function LogView() {
   const [filterTanggal, setFilterTanggal] = useState("");
   const [showFilter, setShowFilter] = useState(false);
 
-  // Listener 500 log terbaru
+  // Listener menampilkan maksimal 500 log terbaru sekaligus di layar (batas
+  // TAMPILAN untuk performa render, bukan batas penghapusan/retensi — data di
+  // database tetap disimpan sesuai aturan usia 30 hari di pruneOldActivityLogs,
+  // terlepas dari berapa yang ditampilkan di sini).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
@@ -194,7 +203,7 @@ export default function LogView() {
 
           {logs.length >= 500 && (
             <div style={{ padding: "12px 16px", textAlign: "center", fontSize: 13, color: "var(--color-txt3)", borderTop: "1px solid var(--color-border)" }}>
-              Menampilkan 500 log terbaru. Log otomatis terhapus setelah 30 hari.
+              Menampilkan 500 log terbaru. Semua log tetap tersimpan di database sampai berusia 30 hari.
             </div>
           )}
         </div>

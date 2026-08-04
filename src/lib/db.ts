@@ -18,7 +18,7 @@ import {
 import { db } from "@/lib/firebase";
 import { Tagihan, Member, ActivityLog } from "@/types";
 import { buildNomorTagihan, isMemberTerdaftarSaatPeriode, isMenunggak, getBulanTahunAktif } from "@/lib/helpers";
-import { MAX_LOG_ENTRIES } from "@/lib/constants";
+import { YEARS } from "@/lib/constants";
 
 // ─── Members ─────────────────────────────────────────────────────────────────
 
@@ -183,7 +183,13 @@ export async function getTotalOperasional(
 }
 
 // ─── Activity Log ─────────────────────────────────────────────────────────────
-
+// Retensi log: MURNI berbasis usia (30 hari), lihat pruneOldActivityLogs() di
+// bawah dan firestore.rules untuk /activityLog. TIDAK ADA batas jumlah entri
+// — sengaja dihilangkan (v1.4.4): storage untuk log kecil (ratusan-ribuan
+// entri hanya beberapa ratus KB), dan log di sini murni catatan teknis
+// jangka pendek ("siapa baru saja melakukan apa"), bukan arsip audit
+// jangka panjang — audit pembayaran/tanggal bayar punya sumber kebenaran
+// sendiri di koleksi tagihan/members yang tidak kena retensi ini.
 export async function saveActivityLog(
   action: string,
   detail: string,
@@ -199,18 +205,6 @@ export async function saveActivityLog(
   };
 
   await addDoc(collection(db, "activityLog"), logData);
-
-  // trim jika melebihi MAX_LOG_ENTRIES
-  const allLogs = await getDocs(
-    query(collection(db, "activityLog"), orderBy("ts", "asc"))
-  );
-
-  if (allLogs.size > MAX_LOG_ENTRIES) {
-    const batch = writeBatch(db);
-    const toDelete = allLogs.docs.slice(0, allLogs.size - MAX_LOG_ENTRIES);
-    toDelete.forEach((d) => batch.delete(d.ref));
-    await batch.commit();
-  }
 }
 
 // ─── Harga History ────────────────────────────────────────────────────────────
@@ -399,6 +393,68 @@ export async function getTagihanRekap(
   return list;
 }
 
+/**
+ * Deteksi tahun-tahun yang benar-benar punya data tagihan, untuk dropdown
+ * "Export Tahunan". Dicek dengan query bertarget + limit(1) per kandidat
+ * tahun (dari constants.YEARS, sudah dibatasi wajar: 2024 s.d. tahun
+ * berjalan+2) — jauh lebih murah dari sisi baca Firestore dibanding
+ * getDocs() tanpa batas atas seluruh koleksi tagihan hanya untuk tahu tahun
+ * mana yang terisi, apalagi kalau koleksi sudah besar di masa depan.
+ *
+ * Hasil selalu diurutkan terbaru dulu (descending), karena itu urutan yang
+ * paling wajar dipilih orang di dropdown export.
+ */
+export async function getAvailableRekapYears(): Promise<number[]> {
+  const results = await Promise.all(
+    YEARS.map(async (y) => {
+      const q = query(collection(db, "tagihan"), where("tahun", "==", y), limit(1));
+      const snap = await getDocs(q);
+      return snap.empty ? null : y;
+    })
+  );
+  return results.filter((y): y is number => y !== null).sort((a, b) => b - a);
+}
+
+/**
+ * Ambil semua tagihan dalam rentang tahun [tahunMulai, tahunAkhir] (inklusif
+ * kedua ujung), untuk export Tahunan (tahunMulai === tahunAkhir) atau
+ * Keseluruhan (rentang beberapa tahun, dibatasi wajar oleh pemanggil — lihat
+ * EXPORT_KESELURUHAN_TAHUN_TERAKHIR di constants.ts).
+ *
+ * Query per-tahun (bukan satu query rentang gabungan) supaya tetap konsisten
+ * dengan pola "tanpa orderBy, tanpa composite index" di seluruh file ini —
+ * where("tahun", "==", y) untuk tiap tahun dalam rentang, hasil digabung dan
+ * di-sort di client. Untuk rentang 1-3 tahun (cakupan export yang disepakati)
+ * ini jauh lebih sederhana dan aman daripada composite index untuk range
+ * query dua field (tahun + bulan) sekaligus.
+ */
+export async function getTagihanRekapRange(
+  tahunMulai: number,
+  tahunAkhir: number
+): Promise<Tagihan[]> {
+  const tahunList: number[] = [];
+  for (let y = tahunMulai; y <= tahunAkhir; y++) tahunList.push(y);
+
+  const perTahun = await Promise.all(
+    tahunList.map(async (tahun) => {
+      const q = query(collection(db, "tagihan"), where("tahun", "==", tahun));
+      const snap = await getDocs(q);
+      return snap.docs.map((d) => ({
+        id: d.id,
+        ...(d.data() as Omit<Tagihan, "id">),
+      }));
+    })
+  );
+
+  const list = perTahun.flat();
+  list.sort((a, b) => {
+    if (a.tahun !== b.tahun) return a.tahun - b.tahun;
+    if (a.bulan !== b.bulan) return a.bulan - b.bulan;
+    return a.memberNama.localeCompare(b.memberNama, "id");
+  });
+  return list;
+}
+
 // ─── Simpan operasional ───────────────────────────────────────────────────────
 
 export async function saveOperasional(
@@ -516,9 +572,19 @@ export async function getTagihanByMember(memberId: string): Promise<Tagihan[]> {
 // ─── Activity Log listener ────────────────────────────────────────────────────
 
 // ─── Prune log lebih dari 30 hari ────────────────────────────────────────────
+// Rules Firestore (activityLog) hanya mengizinkan delete jika dokumen ITU
+// SENDIRI (resource.data.ts) sudah > 30 hari, dievaluasi terhadap jam SERVER
+// (request.time) — bukan jam klien. Kalau jam klien sedikit maju dari server,
+// query di sini bisa saja "menjamin" dokumen sudah 30 hari padahal dari sudut
+// pandang server (saat rules dievaluasi) belum genap, menyebabkan delete gagal
+// permission-denied untuk dokumen batas. Untuk itu query memakai cutoff 31
+// hari (bukan tepat 30) sebagai margin aman terhadap selisih jam — dokumen
+// yang lolos query dijamin cukup jauh melewati batas 30 hari versi rules.
+const PRUNE_QUERY_MARGIN_HARI = 31;
+
 export async function pruneOldActivityLogs(): Promise<number> {
   const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - 30);
+  cutoff.setDate(cutoff.getDate() - PRUNE_QUERY_MARGIN_HARI);
   const cutoffTs = Timestamp.fromDate(cutoff);
 
   const q = query(

@@ -1,6 +1,6 @@
 {
   "name": "airku",
-  "version": "1.4.3",
+  "version": "1.6.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,6 +17,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@tanstack/react-query": "^5.100.14",
+    "exceljs": "^4.4.0",
     "firebase": "^12.13.0",
     "jspdf": "^2.5.2",
     "lucide-react": "^1.16.0",

@@ -1,4 +1,4 @@
-import { AppSettings, BlokTarif, BlokSnapshot, Member, FirestoreTs } from "@/types";
+import { AppSettings, BlokTarif, BlokSnapshot, Member, FirestoreTs, Tagihan, RekapRow } from "@/types";
 import { Timestamp } from "firebase/firestore";
 
 // ─── Kalkulasi Tagihan ───────────────────────────────────────────────────────
@@ -427,6 +427,68 @@ export function isMemberTerdaftarSaatPeriode(
 }
 
 
+
+/**
+ * Bangun daftar RekapRow untuk satu bulan/tahun tertentu — join antara
+ * member aktif dan tagihan yang sudah ada (jika ada), plus status
+ * lunas/belum/menunggak. Diekstrak dari RekapView (logika join yang sudah
+ * ada sejak awal) supaya bisa dipakai ulang oleh export multi-bulan
+ * (Tahunan/Keseluruhan) tanpa duplikasi — perilaku identik dengan yang
+ * sudah berjalan di menu Rekap untuk satu bulan.
+ *
+ * bulanSekarang/tahunSekarang WAJIB bulan sungguhan saat ini (dari
+ * getBulanTahunAktif()), bukan bulan yang sedang diproses dalam loop —
+ * sama seperti kontrak isMenunggak() itu sendiri (lihat komentar di
+ * isMenunggak, dan bug regresi v1.4.2 yang jadi alasan kontrak ini ada).
+ */
+export function buildRekapRows(
+  tagihan: Tagihan[],
+  members: Member[],
+  bulan: number,
+  tahun: number,
+  bulanSekarang: number,
+  tahunSekarang: number
+): RekapRow[] {
+  const tagihanMap = new Map(tagihan.map((t) => [t.memberId, t]));
+  const membersAktif = members.filter((m) => m.status === "aktif");
+
+  return membersAktif
+    .filter((m) => {
+      if (tagihanMap.has(m.id!)) return true;
+      return isMemberTerdaftarSaatPeriode(m, bulan, tahun);
+    })
+    .map((m) => {
+      const t = tagihanMap.get(m.id!);
+      if (t) {
+        return {
+          nama: t.memberNama,
+          nomorSambungan: t.memberNomorSambungan,
+          dusun: t.memberDusun,
+          rt: t.memberRT,
+          pemakaian: t.pemakaian,
+          total: t.total,
+          status: t.status,
+          bulan: t.bulan,
+          tahun: t.tahun,
+          menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang),
+        };
+      } else {
+        const menunggak = isMenunggak(bulan, tahun, bulanSekarang, tahunSekarang);
+        return {
+          nama: m.nama,
+          nomorSambungan: m.nomorSambungan,
+          dusun: m.dusun ?? "",
+          rt: m.rt ?? "",
+          pemakaian: 0,
+          total: 0,
+          status: "belum" as const,
+          bulan,
+          tahun,
+          menunggak,
+        };
+      }
+    });
+}
 
 // ─── Nomor Sambungan ─────────────────────────────────────────────────────────
 

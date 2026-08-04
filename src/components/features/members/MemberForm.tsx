@@ -140,7 +140,11 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
           data.tanggalNonaktif !== nilaiNonaktifTersimpan;
 
         const updateData: Parameters<typeof updateMember>[1] = {
-          nama: data.nama.trim(),
+          // Lapisan kedua penjamin kapital — onChange di input sudah
+          // meng-uppercase saat mengetik, tapi .toUpperCase() di sini
+          // memastikan data yang BENAR-BENAR tersimpan ke Firestore selalu
+          // kapital apa pun jalur nilainya masuk ke sini (mis. autofill).
+          nama: data.nama.trim().toUpperCase(),
           nomorSambungan: data.nomorSambungan.trim(),
           alamat: data.alamat?.trim() ?? "",
           rt: data.rt ?? "",
@@ -175,7 +179,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         await updateMember(editTarget.id!, updateData);
         await saveActivityLog(
           "edit_member",
-          `Edit pelanggan: ${data.nama.trim()} (${data.nomorSambungan})` +
+          `Edit pelanggan: ${data.nama.trim().toUpperCase()} (${data.nomorSambungan})` +
             (berhentiSekarang
               ? ` — dinonaktifkan`
               : aktifKembali
@@ -190,7 +194,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
       } else {
         const meterVal = parseInt(data.meterAwalPertama || "");
         await saveMember({
-          nama: data.nama.trim(),
+          nama: data.nama.trim().toUpperCase(),
           nomorSambungan: data.nomorSambungan.trim(),
           alamat: data.alamat?.trim() ?? "",
           rt: data.rt ?? "",
@@ -203,7 +207,7 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         });
         await saveActivityLog(
           "tambah_member",
-          `Tambah pelanggan baru: ${data.nama.trim()} (${data.nomorSambungan})`,
+          `Tambah pelanggan baru: ${data.nama.trim().toUpperCase()} (${data.nomorSambungan})`,
           // SAFE: AppShell memastikan firebaseUser tidak null sebelum render komponen ini
           firebaseUser!.email!, userRole!.role
         );
@@ -243,11 +247,18 @@ export default function MemberForm({ editTarget, onClose }: MemberFormProps) {
         {/* #8 Fix: semua label form menggunakan <label htmlFor> bukan <div> */}
         <form onSubmit={handleSubmit(onSubmit)} noValidate style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
-          {/* Nama */}
+          {/* Nama — dipaksa huruf besar (kapital) baik saat mengetik maupun
+              saat tersimpan, supaya data pelanggan konsisten rapi. onChange
+              custom ini menimpa onChange bawaan dari register("nama") di
+              spread sebelumnya (urutan prop JSX: yang ditulis belakangan
+              menang) — sengaja, supaya kita bisa transformasi nilainya
+              sebelum diteruskan ke RHF. shouldValidate/shouldDirty dijaga
+              true supaya validasi & status form tetap berjalan normal. */}
           <div>
             <label htmlFor="member-nama" className="section-label">Nama Lengkap *</label>
             <input id="member-nama" className="input-field" placeholder="Nama pelanggan"
-              {...register("nama")} />
+              {...register("nama")}
+              onChange={(e) => setValue("nama", e.target.value.toUpperCase(), { shouldValidate: true, shouldDirty: true })} />
             {errors.nama && <p style={{ fontSize: 13, color: "var(--color-belum)", marginTop: 4 }}>{errors.nama.message}</p>}
           </div>
 

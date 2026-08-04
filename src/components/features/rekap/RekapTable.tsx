@@ -1,7 +1,7 @@
 "use client";
 import { CheckCircle2, Clock, AlertTriangle } from "lucide-react";
 import { formatRp, formatM3, getStatusTagihan, STATUS_TIER_COLOR, STATUS_TIER_BG, STATUS_TIER_LABEL } from "@/lib/helpers";
-import { RekapRow } from "@/lib/export";
+import { RekapRow } from "@/types";
 
 interface RekapTableProps {
   rows: RekapRow[];

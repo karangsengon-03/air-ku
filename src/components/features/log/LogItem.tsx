@@ -51,6 +51,14 @@ export const ACTION_META: Record<string, { label: string; icon: string; color: s
   ubah_tarif: { label: "Ubah Tarif", icon: "Settings", color: "var(--color-primary)" },
   ubah_alokasi_nomor: { label: "Ubah Alokasi Nomor", icon: "Settings", color: "var(--color-primary)" },
   logout: { label: "Logout", icon: "Unlock", color: "var(--color-txt3)" },
+  // ── Legacy (data log dari sebelum v1.3.0/Jun 2026, sebelum skema Status
+  // 3 Tier — lihat README changelog). Kode saat ini TIDAK LAGI menghasilkan
+  // action dengan nama ini, tapi entri log lama di Firestore masih memakainya,
+  // jadi tetap perlu dipetakan supaya tampil rapi, bukan mentah. Kalau ada
+  // nama action legacy lain yang masih tampil mentah di log lama, beri tahu
+  // supaya bisa ditambahkan juga di sini.
+  entry_iuran: { label: "Entry Bayar", icon: "ClipboardCheck", color: "var(--color-lunas)" },
+  UPDATE_TAGIHAN_STATUS: { label: "Update Status Tagihan", icon: "CheckCircle2", color: "var(--color-lunas)" },
 };
 
 export function getActionMeta(action: string) {

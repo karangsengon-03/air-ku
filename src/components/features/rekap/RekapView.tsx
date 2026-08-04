@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, Droplets, Download, Share2, Filter, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, Droplets, Download, Share2, Filter, Printer, FileSpreadsheet, CalendarRange, X } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import { getTagihanRekap, getTotalOperasional } from "@/lib/db";
-import { formatRp, isMenunggak, isMemberTerdaftarSaatPeriode, getBulanTahunAktif } from "@/lib/helpers";
-import { downloadPdfRekap, buildWaKolektif, RekapRow } from "@/lib/export";
-import { MONTHS, YEARS } from "@/lib/constants";
+import { getTagihanRekap, getTotalOperasional, getTagihanRekapRange, getAvailableRekapYears } from "@/lib/db";
+import { formatRp, getBulanTahunAktif, buildRekapRows } from "@/lib/helpers";
+import { downloadPdfRekap, downloadPdfRekapRange, downloadExcelRekap, buildWaKolektif, ExportScope } from "@/lib/export";
+import { RekapRow } from "@/types";
+import { MONTHS, YEARS, EXPORT_KESELURUHAN_TAHUN_TERAKHIR } from "@/lib/constants";
 import RekapTable from "./RekapTable";
 import { toast } from "@/lib/toast";
 
@@ -21,6 +22,13 @@ export default function RekapView() {
   const [filterRT, setFilterRT] = useState("__semua__");
   const [showBulanPicker, setShowBulanPicker] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
+  // ── Export multi-cakupan (v1.5.0): Bulan Ini / Tahunan / Keseluruhan ──────
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [exportScopeKind, setExportScopeKind] = useState<"bulan" | "tahunan" | "keseluruhan">("bulan");
+  const [exportTahunPilihan, setExportTahunPilihan] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [availableYearsLoading, setAvailableYearsLoading] = useState(false);
+  const [exportRangeLoading, setExportRangeLoading] = useState(false);
   // Fallback jika membersLoaded tak kunjung true (mis. koneksi bermasalah) —
   // supaya halaman tidak terjebak loading selamanya.
   const [forceProceed, setForceProceed] = useState(false);
@@ -48,9 +56,6 @@ export default function RekapView() {
       ]);
       if (signal?.aborted) return;
 
-      // Build map tagihan by memberId
-      const tagihanMap = new Map(tagihan.map((t) => [t.memberId, t]));
-
       // Bulan/tahun SUNGGUHAN sekarang — titik referensi untuk isMenunggak(),
       // independen dari activeBulan/activeTahun (bulan yang sedang DILIHAT di
       // Rekap, yang bisa saja bulan lampau). FIX v1.4.2: sebelumnya kedua
@@ -60,52 +65,12 @@ export default function RekapView() {
       // ini terhadap batas Juni, bukan mengenali Juni sebagai bulan lampau.
       const { bulan: bulanSekarang, tahun: tahunSekarang } = getBulanTahunAktif();
 
-      // Join: semua member aktif + tagihan yang ada
-      const membersAktif = members.filter((m) => m.status === "aktif");
-
-      const rows: RekapRow[] = membersAktif
-        .filter((m) => {
-          // Member yang BELUM punya tagihan tercatat untuk bulan ini, dan belum
-          // terdaftar pada bulan/tahun rekap ini, dikecualikan dari rekap —
-          // rekap bulan Mei tidak boleh menampilkan pelanggan yang baru daftar Juli.
-          // Jika sudah ada tagihan tercatat (tagihanMap punya entrinya), member tetap
-          // ditampilkan apa adanya — itu transaksi nyata yang sudah terjadi.
-          if (tagihanMap.has(m.id!)) return true;
-          return isMemberTerdaftarSaatPeriode(m, activeBulan, activeTahun);
-        })
-        .map((m) => {
-          const t = tagihanMap.get(m.id!);
-          if (t) {
-            // Sudah di-entry (lunas)
-            return {
-              nama: t.memberNama,
-              nomorSambungan: t.memberNomorSambungan,
-              dusun: t.memberDusun,
-              rt: t.memberRT,
-              pemakaian: t.pemakaian,
-              total: t.total,
-              status: t.status,
-              bulan: t.bulan,
-              tahun: t.tahun,
-              menunggak: t.status === "belum" && isMenunggak(t.bulan, t.tahun, bulanSekarang, tahunSekarang),
-            };
-          } else {
-            // Belum di-entry = belum bayar
-            const menunggak = isMenunggak(activeBulan, activeTahun, bulanSekarang, tahunSekarang);
-            return {
-              nama: m.nama,
-              nomorSambungan: m.nomorSambungan,
-              dusun: m.dusun ?? "",
-              rt: m.rt ?? "",
-              pemakaian: 0,
-              total: 0,
-              status: "belum" as const,
-              bulan: activeBulan,
-              tahun: activeTahun,
-              menunggak,
-            };
-          }
-        });
+      // Join member+tagihan → RekapRow[] — logika diekstrak ke buildRekapRows
+      // (helpers.ts) supaya bisa dipakai ulang oleh export multi-bulan
+      // (Tahunan/Keseluruhan) tanpa duplikasi.
+      const rows: RekapRow[] = buildRekapRows(
+        tagihan, members, activeBulan, activeTahun, bulanSekarang, tahunSekarang
+      );
 
       // Sort: lunas dulu, lalu belum, lalu menunggak — dalam tiap grup sort by nama
       rows.sort((a, b) => {
@@ -169,6 +134,86 @@ export default function RekapView() {
     const text = buildWaKolektif(filtered, bulanLabel, settings.namaOrganisasi);
     if (!text) { toast.info("Semua pelanggan sudah lunas!"); return; }
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  // Buka picker export cakupan (Bulan Ini/Tahunan/Keseluruhan) — muat daftar
+  // tahun yang benar-benar punya data untuk pilihan Tahunan, hanya sekali
+  // saat picker pertama dibuka (bukan tiap render).
+  const handleOpenExportPicker = async () => {
+    setShowExportPicker(true);
+    if (availableYears.length > 0) return;
+    setAvailableYearsLoading(true);
+    try {
+      const years = await getAvailableRekapYears();
+      setAvailableYears(years);
+      if (years.length > 0 && exportTahunPilihan === null) setExportTahunPilihan(years[0]);
+    } catch {
+      toast.error("Gagal memuat daftar tahun.");
+    } finally {
+      setAvailableYearsLoading(false);
+    }
+  };
+
+  // Eksekusi export untuk cakupan Tahunan/Keseluruhan (multi-bulan). Cakupan
+  // "bulan" (satu bulan aktif) tetap pakai handleExportPdf/downloadPdfRekap
+  // yang sudah ada — fungsi ini khusus untuk rentang.
+  const handleExportRange = async (format: "pdf" | "excel") => {
+    let scope: ExportScope;
+    if (exportScopeKind === "tahunan") {
+      if (exportTahunPilihan === null) { toast.info("Pilih tahun terlebih dahulu."); return; }
+      scope = { kind: "tahunan", tahun: exportTahunPilihan };
+    } else {
+      const tahunAkhir = getBulanTahunAktif().tahun;
+      scope = { kind: "keseluruhan", tahunMulai: tahunAkhir - EXPORT_KESELURUHAN_TAHUN_TERAKHIR + 1, tahunAkhir };
+    }
+
+    setExportRangeLoading(true);
+    try {
+      const tahunMulai = scope.kind === "tahunan" ? scope.tahun : scope.tahunMulai;
+      const tahunAkhirQuery = scope.kind === "tahunan" ? scope.tahun : scope.tahunAkhir;
+      const tagihanRange = await getTagihanRekapRange(tahunMulai, tahunAkhirQuery);
+
+      const { bulan: bulanSekarang, tahun: tahunSekarang } = getBulanTahunAktif();
+
+      // Kelompokkan tagihanRange per "bulan-tahun" SEKALI di awal (bukan
+      // filter() berulang di dalam loop bersarang di bawah) — untuk cakupan
+      // Keseluruhan (bisa ribuan dokumen tagihan lintas 3 tahun × 32+ bulan),
+      // ini mengubah kompleksitas dari O(bulan × total_tagihan) jadi
+      // O(total_tagihan + bulan), penting seiring data terus bertambah.
+      const tagihanPerBulan = new Map<string, typeof tagihanRange>();
+      for (const t of tagihanRange) {
+        const key = `${t.tahun}-${t.bulan}`;
+        const arr = tagihanPerBulan.get(key);
+        if (arr) arr.push(t); else tagihanPerBulan.set(key, [t]);
+      }
+
+      // Bangun RekapRow[] untuk SETIAP bulan dalam rentang (bukan cuma bulan
+      // aktif), supaya member yang belum di-entry sama sekali untuk bulan
+      // tertentu tetap muncul sebagai baris "belum bayar" — konsisten dengan
+      // perilaku menu Rekap satu-bulan (lihat buildRekapRows di helpers.ts).
+      const semuaRows: RekapRow[] = [];
+      for (let tahun = tahunMulai; tahun <= tahunAkhirQuery; tahun++) {
+        const bulanAkhirTahunIni = tahun === tahunSekarang ? bulanSekarang : 12;
+        for (let bulan = 1; bulan <= bulanAkhirTahunIni; bulan++) {
+          const tagihanBulanIni = tagihanPerBulan.get(`${tahun}-${bulan}`) ?? [];
+          semuaRows.push(...buildRekapRows(tagihanBulanIni, members, bulan, tahun, bulanSekarang, tahunSekarang));
+        }
+      }
+
+      if (semuaRows.length === 0) { toast.info("Tidak ada data untuk cakupan ini."); return; }
+
+      if (format === "pdf") {
+        await downloadPdfRekapRange(semuaRows, scope, settings);
+      } else {
+        await downloadExcelRekap(semuaRows, scope, settings);
+      }
+      toast.success(`${format === "pdf" ? "PDF" : "Excel"} berhasil diunduh.`);
+      setShowExportPicker(false);
+    } catch {
+      toast.error(`Gagal membuat ${format === "pdf" ? "PDF" : "Excel"}.`);
+    } finally {
+      setExportRangeLoading(false);
+    }
   };
 
   const prevBulan = () => activeBulan === 1 ? setActiveBulanTahun(12, activeTahun - 1) : setActiveBulanTahun(activeBulan - 1, activeTahun);
@@ -249,6 +294,9 @@ export default function RekapView() {
               ? <><div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(255,255,255,0.8)" }} /> Membuat PDF…</>
               : <><Download size={15} /> Export PDF</>}
           </button>
+          <button onClick={handleOpenExportPicker} className="btn-secondary flex-1" style={{ height: 48, fontSize: 13 }}>
+            <CalendarRange size={15} /> Export Lainnya
+          </button>
           <button onClick={handleShareWa} className="btn-secondary flex-1" style={{ height: 48, fontSize: 13 }}>
             <Share2 size={15} /> Kirim ke WA
           </button>
@@ -261,6 +309,100 @@ export default function RekapView() {
           >
             <Printer size={18} />
           </button>
+        </div>
+      )}
+
+      {/* Export Picker — cakupan Bulan Ini / Tahunan / Keseluruhan, + format PDF/Excel */}
+      {showExportPicker && (
+        <div
+          className="flex items-center justify-center"
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, padding: 16 }}
+          onClick={() => !exportRangeLoading && setShowExportPicker(false)}
+        >
+          <div className="card" style={{ padding: "20px", maxWidth: 420, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="font-bold text-sm">Export Laporan Rekap</div>
+              <button onClick={() => setShowExportPicker(false)} className="btn-ghost" style={{ height: 32, width: 32, padding: 0 }} aria-label="Tutup">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="section-label mb-2">Cakupan</div>
+            <div className="flex flex-col gap-2 mb-4">
+              <button
+                onClick={() => setExportScopeKind("bulan")}
+                className={exportScopeKind === "bulan" ? "btn-primary" : "btn-secondary"}
+                style={{ height: 44, fontSize: 13, justifyContent: "flex-start", padding: "0 14px" }}
+              >
+                Bulan Ini ({bulanLabel})
+              </button>
+              <button
+                onClick={() => setExportScopeKind("tahunan")}
+                className={exportScopeKind === "tahunan" ? "btn-primary" : "btn-secondary"}
+                style={{ height: 44, fontSize: 13, justifyContent: "flex-start", padding: "0 14px" }}
+              >
+                Tahunan
+              </button>
+              <button
+                onClick={() => setExportScopeKind("keseluruhan")}
+                className={exportScopeKind === "keseluruhan" ? "btn-primary" : "btn-secondary"}
+                style={{ height: 44, fontSize: 13, justifyContent: "flex-start", padding: "0 14px" }}
+              >
+                Keseluruhan ({getBulanTahunAktif().tahun - EXPORT_KESELURUHAN_TAHUN_TERAKHIR + 1}–{getBulanTahunAktif().tahun})
+              </button>
+            </div>
+
+            {exportScopeKind === "tahunan" && (
+              <div className="mb-4">
+                <div className="section-label mb-2">Pilih Tahun</div>
+                {availableYearsLoading ? (
+                  <div className="text-sm" style={{ color: "var(--color-txt3)" }}>Memuat daftar tahun…</div>
+                ) : availableYears.length === 0 ? (
+                  <div className="text-sm" style={{ color: "var(--color-txt3)" }}>Belum ada data tagihan tersimpan.</div>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    {availableYears.map((y) => (
+                      <button key={y} onClick={() => setExportTahunPilihan(y)}
+                        className={exportTahunPilihan === y ? "btn-primary" : "btn-secondary"}
+                        style={{ height: 40, fontSize: 13, padding: "0 14px" }}>{y}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {exportScopeKind === "bulan" ? (
+              <div className="text-sm" style={{ color: "var(--color-txt3)", marginBottom: 4 }}>
+                Gunakan tombol <strong>Export PDF</strong> di atas untuk laporan bulan aktif. Excel untuk satu bulan belum tersedia — pilih Tahunan atau Keseluruhan.
+              </div>
+            ) : (
+              <>
+                <div className="section-label mb-2">Format</div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleExportRange("pdf")}
+                    disabled={exportRangeLoading || (exportScopeKind === "tahunan" && exportTahunPilihan === null)}
+                    className="btn-primary flex-1"
+                    style={{ height: 48, fontSize: 13 }}
+                  >
+                    {exportRangeLoading
+                      ? <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: "rgba(255,255,255,0.8)" }} />
+                      : <><Download size={15} /> PDF</>}
+                  </button>
+                  <button
+                    onClick={() => handleExportRange("excel")}
+                    disabled={exportRangeLoading || (exportScopeKind === "tahunan" && exportTahunPilihan === null)}
+                    className="btn-secondary flex-1"
+                    style={{ height: 48, fontSize: 13 }}
+                  >
+                    {exportRangeLoading
+                      ? <div className="w-4 h-4 rounded-full border-2 border-t-transparent animate-spin" />
+                      : <><FileSpreadsheet size={15} /> Excel</>}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 

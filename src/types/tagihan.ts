@@ -43,3 +43,23 @@ export interface Tagihan {
   entryOleh: string;
   catatan: string;
 }
+
+/**
+ * Baris rekap satu pelanggan untuk satu bulan/tahun — hasil join antara
+ * Tagihan mentah dan data Member (nama, dusun, rt, status lunas/menunggak).
+ * Dibangun oleh buildRekapRows() di helpers.ts, dikonsumsi oleh RekapView
+ * (tampilan tabel) dan lib/export.ts (PDF/Excel).
+ */
+export interface RekapRow {
+  nama: string;
+  nomorSambungan: string;
+  dusun: string;
+  rt: string;
+  pemakaian: number;
+  total: number;
+  status: 'lunas' | 'belum';
+  /** true jika belum bayar dan sudah lewat batas menunggak bulan itu (lihat isMenunggak di helpers.ts) */
+  menunggak: boolean;
+  bulan: number;
+  tahun: number;
+}

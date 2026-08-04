@@ -20,8 +20,10 @@ import {
   getMemberStartPeriode,
   getMemberEndPeriode,
   isMemberTerdaftarSaatPeriode,
+  buildRekapRows,
   toDateInputValue,
 } from "../helpers";
+import type { Member, Tagihan } from "../../types";
 
 // ─── Mock firebase/firestore ─────────────────────────────────────────────────
 // helpers.ts import Timestamp dari firebase/firestore — kita mock agar test
@@ -659,5 +661,99 @@ describe("toDateInputValue", () => {
 
   it("format benar dari instance Date langsung", () => {
     expect(toDateInputValue(new Date(2026, 11, 25))).toBe("2026-12-25"); // 25 Des 2026
+  });
+});
+
+// ─── buildRekapRows ───────────────────────────────────────────────────────────
+describe("buildRekapRows", () => {
+  const baseMember = (overrides: Partial<Member>): Member => ({
+    id: "m1",
+    nama: "Test",
+    nomorSambungan: "001",
+    alamat: "",
+    rt: "",
+    dusun: "",
+    status: "aktif",
+    ...overrides,
+  } as Member);
+
+  const baseTagihan = (overrides: Partial<Tagihan>): Tagihan => ({
+    id: "t1",
+    nomorTagihan: "TAG-1",
+    memberId: "m1",
+    memberNama: "Test",
+    memberNomorSambungan: "001",
+    memberDusun: "Dusun A",
+    memberRT: "001",
+    bulan: 7,
+    tahun: 2026,
+    meterAwal: 0,
+    meterAkhir: 0,
+    pemakaian: 0,
+    hargaHistoryId: "",
+    abonemenSnapshot: 0,
+    hargaBlok1Snapshot: 0,
+    batasBlokSnapshot: 0,
+    hargaBlok2Snapshot: 0,
+    subtotalBlok1: 0,
+    subtotalBlok2: 0,
+    subtotalPemakaian: 0,
+    total: 0,
+    status: "belum",
+    tanggalBayar: null,
+    tanggalEntry: null,
+    entryOleh: "",
+    catatan: "",
+    ...overrides,
+  } as Tagihan);
+
+  it("member dengan tagihan lunas → status lunas, menunggak selalu false", () => {
+    const members = [baseMember({ id: "m1", status: "aktif" })];
+    const tagihan = [baseTagihan({ memberId: "m1", status: "lunas", total: 25000 })];
+    const rows = buildRekapRows(tagihan, members, 7, 2026, 8, 2026);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("lunas");
+    expect(rows[0].menunggak).toBe(false);
+    expect(rows[0].total).toBe(25000);
+  });
+
+  it("member dengan tagihan belum-bayar yang sudah di-entry, dilihat dari bulan lampau → menunggak true", () => {
+    const members = [baseMember({ id: "m1", status: "aktif" })];
+    // Tagihan Juni, belum bayar, dilihat dari sudut pandang Agustus (bulan lampau)
+    const tagihan = [baseTagihan({ memberId: "m1", bulan: 6, tahun: 2026, status: "belum" })];
+    const rows = buildRekapRows(tagihan, members, 6, 2026, 8, 2026);
+    expect(rows[0].status).toBe("belum");
+    expect(rows[0].menunggak).toBe(true);
+  });
+
+  it("member yang belum pernah di-entry sama sekali (virtual) tetap muncul sebagai belum-bayar", () => {
+    const members = [baseMember({ id: "m1", status: "aktif" })];
+    const rows = buildRekapRows([], members, 6, 2026, 8, 2026);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("belum");
+    expect(rows[0].total).toBe(0);
+    expect(rows[0].menunggak).toBe(true); // Juni dilihat dari Agustus = bulan lampau = menunggak
+  });
+
+  it("member yang belum terdaftar pada periode ini DAN belum punya tagihan → dikecualikan", () => {
+    const createdAtAgustus = makeTimestampLike(new Date(2026, 7, 1)); // daftar Agustus 2026
+    const members = [baseMember({ id: "m1", status: "aktif", createdAt: createdAtAgustus })];
+    // Rekap untuk bulan Juni (sebelum member ini terdaftar), tidak ada tagihan tercatat
+    const rows = buildRekapRows([], members, 6, 2026, 8, 2026);
+    expect(rows).toHaveLength(0);
+  });
+
+  it("member yang belum terdaftar pada periode TAPI sudah punya tagihan tercatat → tetap ditampilkan (transaksi nyata)", () => {
+    const createdAtAgustus = makeTimestampLike(new Date(2026, 7, 1));
+    const members = [baseMember({ id: "m1", status: "aktif", createdAt: createdAtAgustus })];
+    const tagihan = [baseTagihan({ memberId: "m1", bulan: 6, tahun: 2026, status: "lunas" })];
+    const rows = buildRekapRows(tagihan, members, 6, 2026, 8, 2026);
+    expect(rows).toHaveLength(1);
+  });
+
+  it("member non-aktif tidak ikut muncul di rekap", () => {
+    const members = [baseMember({ id: "m1", status: "nonaktif" })];
+    const rows = buildRekapRows([], members, 6, 2026, 8, 2026);
+    expect(rows).toHaveLength(0);
   });
 });
