@@ -7,7 +7,7 @@ Dikelola oleh PAM Al-Hikmah, Desa Karang Sengon, Situbondo — Jawa Timur.
 
 ## Versi Terkini
 
-**v1.6.0** — Agustus 2026
+**v1.6.1** — Agustus 2026
 
 ---
 
@@ -184,6 +184,7 @@ Versi otomatis dibaca dari `package.json` → tampil di Header dan halaman Penga
 
 | Versi | Tanggal | Ringkasan |
 |---|---|---|
+| **1.6.1** | Agu 2026 | Fix modal Export Lainnya (Rekap) tidak muncul di viewport mobile — dirender inline alih-alih lewat ModalPortal, terjebak dalam containing block #app-shell (overflow:hidden), sehingga posisinya salah dan perlu discroll untuk ditemukan; fix nama file PDF invoice tagihan individual (menu Tagihan → Bagikan WA/Download) tidak konsisten antar pelanggan — sebelumnya mengandalkan tagihan.nomorTagihan yang pada sebagian data historis tidak selalu sesuai format baku, sekarang dibangun eksplisit dari field individual dengan format INVOICE-{bulan}-{tahun}-{nama}-{no sambungan} |
 | **1.6.0** | Agu 2026 | Fitur baru: Export Rekap PDF & Excel dengan 3 cakupan (Bulan Ini, Tahunan — hanya tahun berdata, Keseluruhan — 3 tahun terakhir), tiap laporan multi-bulan berisi Ringkasan Per Bulan + Detail Per Pelanggan; ekstraksi logika join rekap ke buildRekapRows (helpers.ts) untuk dipakai ulang antara menu Rekap dan export; tambah dependency exceljs untuk Excel (dipilih atas xlsx/SheetJS karena xlsx punya 2 kerentanan high-severity tanpa perbaikan di npm) |
 | **1.5.0** | Agu 2026 | Fix package-lock.json & header versi README yang tidak ikut ter-update di rilis sebelumnya; fitur baru: Nama Pelanggan wajib huruf besar (real-time saat mengetik + dipaksa saat tersimpan); tambah label log legacy (entry_iuran, UPDATE_TAGIHAN_STATUS) dari data sebelum v1.3.0; rombak retensi Log Aktivitas jadi murni berbasis usia 30 hari (hapus batas 500 entri) — akar masalah "auto-hapus tidak berfungsi" ternyata Firestore Rules melarang delete activityLog sama sekali (allow delete: if false), diperbaiki jadi delete diizinkan HANYA jika dokumen sudah >30 hari (dicek di rules/server, admin tetap tidak bisa hapus manual) |
 | **1.4.3** | Agu 2026 | Fix label kotak ringkasan Tunggakan "Tagihan" + "X bulan" yang ambigu (terlihat seolah jumlah entitas sejajar dengan "Pelanggan" di sebelahnya) → diganti "Akumulasi Tunggak" agar jelas itu total gabungan bulan-tunggak dari semua pelanggan, bukan jumlah bulan kalender atau jumlah pelanggan. Angka tidak berubah, hanya label |

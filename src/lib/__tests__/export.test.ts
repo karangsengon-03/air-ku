@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { ringkasPerBulan, labelExportScope, ExportScope } from "../export";
-import type { RekapRow } from "../../types";
+import { ringkasPerBulan, labelExportScope, buildNamaFileInvoice, ExportScope } from "../export";
+import type { RekapRow, Tagihan } from "../../types";
 
 const row = (overrides: Partial<RekapRow>): RekapRow => ({
   nama: "Test",
@@ -87,5 +87,44 @@ describe("labelExportScope", () => {
   it("cakupan keseluruhan dengan tahunMulai === tahunAkhir → 'Tahun X' (bukan 'X–X')", () => {
     const scope: ExportScope = { kind: "keseluruhan", tahunMulai: 2026, tahunAkhir: 2026 };
     expect(labelExportScope(scope)).toBe("Tahun 2026");
+  });
+});
+
+// ─── buildNamaFileInvoice ─────────────────────────────────────────────────────
+describe("buildNamaFileInvoice", () => {
+  const baseTagihan = (overrides: Partial<Tagihan>): Tagihan => ({
+    id: "t1", nomorTagihan: "", memberId: "m1", memberNama: "Test",
+    memberNomorSambungan: "001", memberDusun: "", memberRT: "",
+    bulan: 7, tahun: 2026, meterAwal: 0, meterAkhir: 0, pemakaian: 0,
+    hargaHistoryId: "", abonemenSnapshot: 0, hargaBlok1Snapshot: 0,
+    batasBlokSnapshot: 0, hargaBlok2Snapshot: 0, subtotalBlok1: 0,
+    subtotalBlok2: 0, subtotalPemakaian: 0, total: 0, status: "belum",
+    tanggalBayar: null, tanggalEntry: null, entryOleh: "", catatan: "",
+    ...overrides,
+  } as Tagihan);
+
+  it("format sesuai spesifikasi: INVOICE-{bulan 2 digit}-{tahun}-{nama}-{no sambungan}", () => {
+    const t = baseTagihan({ memberNama: "ANGGA", memberNomorSambungan: "001", bulan: 7, tahun: 2026 });
+    expect(buildNamaFileInvoice(t)).toBe("INVOICE-07-2026-ANGGA-001");
+  });
+
+  it("REGRESI: nama pelanggan dengan titik (P.JON) — sebelumnya menghasilkan filename tidak konsisten ('JON.pdf' bare) karena mengandalkan nomorTagihan historis yang tidak selalu sesuai format buildNomorTagihan. Sekarang dibangun dari field individual, selalu konsisten.", () => {
+    const t = baseTagihan({ memberNama: "P.JON", memberNomorSambungan: "012", bulan: 7, tahun: 2026 });
+    expect(buildNamaFileInvoice(t)).toBe("INVOICE-07-2026-P.JON-012");
+  });
+
+  it("nama dengan spasi dihapus, bukan diganti tanda hubung (konsisten dengan buildNomorTagihan)", () => {
+    const t = baseTagihan({ memberNama: "Asraful Deni", memberNomorSambungan: "003" });
+    expect(buildNamaFileInvoice(t)).toBe("INVOICE-07-2026-ASRAFULDENI-003");
+  });
+
+  it("bulan Januari–September diberi leading zero (2 digit konsisten)", () => {
+    const t = baseTagihan({ memberNama: "TEST", memberNomorSambungan: "001", bulan: 3, tahun: 2026 });
+    expect(buildNamaFileInvoice(t)).toBe("INVOICE-03-2026-TEST-001");
+  });
+
+  it("nama diubah jadi UPPERCASE meski disimpan huruf kecil/campuran", () => {
+    const t = baseTagihan({ memberNama: "budi santoso", memberNomorSambungan: "099" });
+    expect(buildNamaFileInvoice(t)).toBe("INVOICE-07-2026-BUDISANTOSO-099");
   });
 });

@@ -10,6 +10,7 @@ import { RekapRow } from "@/types";
 import { MONTHS, YEARS, EXPORT_KESELURUHAN_TAHUN_TERAKHIR } from "@/lib/constants";
 import RekapTable from "./RekapTable";
 import { toast } from "@/lib/toast";
+import ModalPortal from "@/components/ui/ModalPortal";
 
 export default function RekapView() {
   const { settings, activeBulan, activeTahun, setActiveBulanTahun, userRole, firebaseUser, members, membersLoaded } = useAppStore();
@@ -313,13 +314,25 @@ export default function RekapView() {
       )}
 
       {/* Export Picker — cakupan Bulan Ini / Tahunan / Keseluruhan, + format PDF/Excel */}
+      {/* FIX v1.6.1: sebelumnya dirender inline (bukan lewat ModalPortal),
+          sehingga terjebak di dalam containing block #app-shell (overflow:
+          hidden) — modal secara teknis "berfungsi" tapi posisinya tidak
+          benar-benar fixed relatif viewport, sehingga di halaman Rekap yang
+          panjang (banyak baris tabel), modal muncul jauh di bawah, perlu
+          discroll untuk ditemukan. Konsisten dengan pola ModalPortal yang
+          sudah dipakai MemberForm/Confirm/OperasionalForm/dll — lihat
+          komentar di ModalPortal.tsx untuk penjelasan containing block ini. */}
       {showExportPicker && (
+        <ModalPortal>
         <div
-          className="flex items-center justify-center"
-          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 50, padding: 16 }}
           onClick={() => !exportRangeLoading && setShowExportPicker(false)}
+          style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 200,
+            display: "flex", alignItems: "flex-start", justifyContent: "center",
+            overflowY: "auto", padding: "40px 16px 40px",
+          }}
         >
-          <div className="card" style={{ padding: "20px", maxWidth: 420, width: "100%" }} onClick={(e) => e.stopPropagation()}>
+          <div className="card animate-fade-in-up" style={{ padding: "20px", maxWidth: 420, width: "100%", borderRadius: 20 }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div className="font-bold text-sm">Export Laporan Rekap</div>
               <button onClick={() => setShowExportPicker(false)} className="btn-ghost" style={{ height: 32, width: 32, padding: 0 }} aria-label="Tutup">
@@ -404,6 +417,7 @@ export default function RekapView() {
             )}
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Loading */}

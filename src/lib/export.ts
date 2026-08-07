@@ -14,6 +14,29 @@ function labelBulan(bulan: number, tahun: number): string {
   return `${MONTHS[bulan - 1]} ${tahun}`;
 }
 
+/**
+ * Nama file PDF invoice tagihan individual, dibangun dari field-field
+ * individual (bulan, tahun, nama, no. sambungan) — BUKAN dari
+ * tagihan.nomorTagihan. Alasan (v1.6.1): nomorTagihan pada sebagian data
+ * historis ternyata tidak selalu konsisten dengan format buildNomorTagihan
+ * (TAG-YYYY-MM-NNN-NAMA) — kemungkinan dari sebelum konvensi itu diterapkan
+ * penuh — sehingga nama file yang dihasilkan bisa berbeda-beda antar
+ * pelanggan (mis. "TAG-2026-07-030-ANGGA.pdf" vs bare "JON.pdf"). Dengan
+ * membangun nama file langsung dari field individual di sini, hasilnya
+ * SELALU konsisten terlepas dari riwayat nomorTagihan tersimpan.
+ *
+ * Format (disepakati admin): INVOICE-{bulan 2 digit}-{tahun}-{nama}-{no
+ * sambungan}. Bulan numerik (07, bukan "Juli") — konsisten dengan konvensi
+ * buildNomorTagihan yang sudah ada (helpers.ts), dan menghindari nama file
+ * berspasi/bergantung locale.
+ */
+export function buildNamaFileInvoice(tagihan: Tagihan): string {
+  const bulanStr = String(tagihan.bulan).padStart(2, "0");
+  const namaSlug = tagihan.memberNama.replace(/\s+/g, "").toUpperCase();
+  const nomorSlug = tagihan.memberNomorSambungan.replace(/\s+/g, "").toUpperCase();
+  return `INVOICE-${bulanStr}-${tagihan.tahun}-${namaSlug}-${nomorSlug}`;
+}
+
 // ─── Generate PDF ─────────────────────────────────────────────────────────────
 
 export async function generatePdfTagihan(
@@ -268,7 +291,7 @@ export async function downloadPdfTagihan(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${tagihan.nomorTagihan}.pdf`;
+  a.download = `${buildNamaFileInvoice(tagihan)}.pdf`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -291,7 +314,7 @@ export async function shareTagihan(
   ) {
     try {
       const blob = await generatePdfTagihan(tagihan, settings);
-      const file = new File([blob], `${tagihan.nomorTagihan}.pdf`, {
+      const file = new File([blob], `${buildNamaFileInvoice(tagihan)}.pdf`, {
         type: "application/pdf",
       });
 
